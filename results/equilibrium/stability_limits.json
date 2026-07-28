@@ -1,0 +1,193 @@
+{
+  "geometry": {
+    "geometry": "381cf00c8d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "accf49ac0e12"
+  },
+  "cases": [
+    {
+      "beta": 0.005000480741582104,
+      "mercier_unstable_fraction": 0.10204081632653061,
+      "ballooning_unstable_fraction": 0.0,
+      "max_alpha": 0.3269699050773369,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 305.5955781558728,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1222.3819688672106,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2750.3592867194025,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 335.10563464861013,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1282.6923402065818,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    },
+    {
+      "beta": 0.010490193640827844,
+      "mercier_unstable_fraction": 0.061224489795918366,
+      "ballooning_unstable_fraction": 0.3137254901960784,
+      "max_alpha": 0.6939642168228386,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 304.5910047095351,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1218.362853189508,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2741.3159339890785,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 334.2319090960181,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1278.9385460395645,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    },
+    {
+      "beta": 0.019986262718956697,
+      "mercier_unstable_fraction": 0.061224489795918366,
+      "ballooning_unstable_fraction": 0.7058823529411765,
+      "max_alpha": 1.3672302956270377,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 298.98147941292376,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1195.9222347251273,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2690.8234935748733,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 328.6378252133763,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1256.5126384268672,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    },
+    {
+      "beta": 0.02993471916286999,
+      "mercier_unstable_fraction": 0.061224489795918366,
+      "ballooning_unstable_fraction": 0.8431372549019608,
+      "max_alpha": 2.162529691602758,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 287.5250423155062,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1150.0923009173014,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2587.704398567583,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 316.7064282906258,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1209.6786812219052,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    }
+  ]
+}

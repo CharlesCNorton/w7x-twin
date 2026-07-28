@@ -1,0 +1,71 @@
+{
+  "geometry": {
+    "geometry": "e0624a09d0db",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "renormalisation": 1.4,
+  "cases": [
+    {
+      "power_w": 5000000.0,
+      "iterations": 3,
+      "converged": true,
+      "seconds": 277.70460331300274,
+      "coupled": {
+        "stored_energy_j": 1202787.6315228064,
+        "current_a": -14213.260811603597,
+        "temperature_axis_ev": 3592.412654737537,
+        "beta": 0.013273719173381047,
+        "iota_edge": 0.9830660310476765,
+        "shift_mm": 31.086888603415908,
+        "beta_analysed": 0.013273719173381047
+      },
+      "sequential": {
+        "stored_energy_j": 1183930.819806994,
+        "current_a": -12863.720802881717,
+        "temperature_axis_ev": 3566.333689293168,
+        "beta": 0.010486621609608398,
+        "iota_edge": 0.9808411665707206,
+        "shift_mm": 28.345524648963227,
+        "beta_analysed": 0.010486621609608398
+      },
+      "residual": {
+        "stored_energy": 1.2554327933945072e-05,
+        "current": 0.0015718230523280624
+      },
+      "history": [
+        {
+          "iteration": 1,
+          "stored_energy_j": 1202282.4979623652,
+          "total_current_a": -12863.720802881717,
+          "electron_temperature_axis_ev": 3598.0898953140145,
+          "beta": 0.010486621609608398,
+          "iota_edge": 0.9808411665707206,
+          "bootstrap_mismatch": 0.04435845468491143
+        },
+        {
+          "iteration": 2,
+          "stored_energy_j": 1202802.7317131674,
+          "total_current_a": -14235.601542596027,
+          "electron_temperature_axis_ev": 3592.3485702934636,
+          "beta": 0.013302074647230504,
+          "iota_edge": 0.9831085738294221,
+          "bootstrap_mismatch": 0.06417211136724031
+        },
+        {
+          "iteration": 3,
+          "stored_energy_j": 1202787.6315228064,
+          "total_current_a": -14213.260811603597,
+          "electron_temperature_axis_ev": 3592.412654737537,
+          "beta": 0.013273719173381047,
+          "iota_edge": 0.9830660310476765,
+          "bootstrap_mismatch": 0.06427096420595528
+        }
+      ]
+    }
+  ]
+}

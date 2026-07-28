@@ -1,0 +1,332 @@
+{
+  "geometry": {
+    "geometry": "1169c323d5d9",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "1234b8c6e07f"
+  },
+  "cases": [
+    {
+      "configuration": "standard",
+      "ky": 0.4,
+      "tprim": 1.0,
+      "growth_rate": 0.0088161669375,
+      "frequency": -0.01169485825,
+      "seconds": 150.4868619008921,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.7,
+      "tprim": 1.0,
+      "growth_rate": 0.03385683625,
+      "frequency": -0.033994888625,
+      "seconds": 143.0631128770765,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.0,
+      "tprim": 1.0,
+      "growth_rate": 0.057564323875,
+      "frequency": -0.023326514125,
+      "seconds": 68.66660101292655,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.4,
+      "tprim": 1.0,
+      "growth_rate": 0.065392456,
+      "frequency": 0.008641737875,
+      "seconds": 122.34697099402547,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.4,
+      "tprim": 2.0,
+      "growth_rate": 0.033172490375,
+      "frequency": -0.0048326142125,
+      "seconds": 136.36436988902278,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.7,
+      "tprim": 2.0,
+      "growth_rate": 0.082660488875,
+      "frequency": 0.007594796,
+      "seconds": 42.03815981885418,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.0,
+      "tprim": 2.0,
+      "growth_rate": 0.122946365,
+      "frequency": 0.05058917025,
+      "seconds": 30.761307098902762,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.4,
+      "tprim": 2.0,
+      "growth_rate": 0.15086464,
+      "frequency": 0.135597425,
+      "seconds": 78.30847059399821,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.4,
+      "tprim": 3.0,
+      "growth_rate": 0.056052911125,
+      "frequency": 0.008376835687499999,
+      "seconds": 78.9519879501313,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.7,
+      "tprim": 3.0,
+      "growth_rate": 0.13011310124999997,
+      "frequency": 0.042021818875,
+      "seconds": 41.98644186509773,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.0,
+      "tprim": 3.0,
+      "growth_rate": 0.19009736,
+      "frequency": 0.10851378625,
+      "seconds": 26.932222990086302,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.4,
+      "tprim": 3.0,
+      "growth_rate": 0.23002566000000002,
+      "frequency": 0.2327967725,
+      "seconds": 66.3934936830774,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.4,
+      "tprim": 4.0,
+      "growth_rate": 0.076527413625,
+      "frequency": 0.020829915375,
+      "seconds": 96.01353491097689,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 0.7,
+      "tprim": 4.0,
+      "growth_rate": 0.17409981,
+      "frequency": 0.06899532475,
+      "seconds": 35.5126395940315,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.0,
+      "tprim": 4.0,
+      "growth_rate": 0.25035449249999997,
+      "frequency": 0.15606222875,
+      "seconds": 26.263147306162864,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "standard",
+      "ky": 1.4,
+      "tprim": 4.0,
+      "growth_rate": 0.3007405225,
+      "frequency": 0.31753173999999995,
+      "seconds": 66.49337950907648,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.4,
+      "tprim": 1.0,
+      "growth_rate": 0.013158657625,
+      "frequency": -0.0039833916375,
+      "seconds": 160.30732865910977,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.7,
+      "tprim": 1.0,
+      "growth_rate": 0.03076325,
+      "frequency": -0.006699357775,
+      "seconds": 168.5711859120056,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.0,
+      "tprim": 1.0,
+      "growth_rate": 0.034087189625,
+      "frequency": 0.020862636875,
+      "seconds": 92.4762608348392,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.4,
+      "tprim": 1.0,
+      "growth_rate": 0.012452120625,
+      "frequency": 0.074850532125,
+      "seconds": 351.0961253999267,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.4,
+      "tprim": 2.0,
+      "growth_rate": 0.03203972825,
+      "frequency": 0.00274186385,
+      "seconds": 150.46904627908953,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.7,
+      "tprim": 2.0,
+      "growth_rate": 0.073803672875,
+      "frequency": 0.0350360755,
+      "seconds": 52.17006342113018,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.0,
+      "tprim": 2.0,
+      "growth_rate": 0.10130577125,
+      "frequency": 0.08651682,
+      "seconds": 27.587706983089447,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.4,
+      "tprim": 2.0,
+      "growth_rate": 0.12269238625000001,
+      "frequency": 0.1688058475,
+      "seconds": 96.82557197101414,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.4,
+      "tprim": 3.0,
+      "growth_rate": 0.0550895905,
+      "frequency": 0.01591178,
+      "seconds": 98.73556429590099,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.7,
+      "tprim": 3.0,
+      "growth_rate": 0.1205377325,
+      "frequency": 0.070277901625,
+      "seconds": 46.91756783681922,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.0,
+      "tprim": 3.0,
+      "growth_rate": 0.17141989125,
+      "frequency": 0.139384475,
+      "seconds": 37.199963218998164,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.4,
+      "tprim": 3.0,
+      "growth_rate": 0.20653763125,
+      "frequency": 0.26175454125,
+      "seconds": 92.91729039279744,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.4,
+      "tprim": 4.0,
+      "growth_rate": 0.07476981575,
+      "frequency": 0.029354527375,
+      "seconds": 105.64195101195946,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 0.7,
+      "tprim": 4.0,
+      "growth_rate": 0.1652871325,
+      "frequency": 0.097481153625,
+      "seconds": 41.41156102414243,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.0,
+      "tprim": 4.0,
+      "growth_rate": 0.2333358025,
+      "frequency": 0.18627481,
+      "seconds": 28.45735457795672,
+      "returncode": 0,
+      "stderr": ""
+    },
+    {
+      "configuration": "high_mirror_ref167",
+      "ky": 1.4,
+      "tprim": 4.0,
+      "growth_rate": 0.27972079250000004,
+      "frequency": 0.348313985,
+      "seconds": 71.25431024492718,
+      "returncode": 0,
+      "stderr": ""
+    }
+  ]
+}

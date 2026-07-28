@@ -1,0 +1,437 @@
+{
+  "geometry": {
+    "geometry": "e0624a09d0db",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "heating_power_w": 5000000.0,
+  "carbon_fraction": 0.02,
+  "radiated_power_w": 368134.7242489974,
+  "power_crossing_separatrix_w": 4631865.275751002,
+  "wetted": {
+    "area_m2": 1.0193141247305544,
+    "lines": 113,
+    "per_element": {
+      "divertor horizontal target, upper": {
+        "footprint_width_m": 0.033506931777721204,
+        "toroidal_length_m": 16.223006536516728,
+        "power_share": 0.2275468574153307,
+        "area_m2": 0.5435831732485912
+      },
+      "divertor vertical target, upper": {
+        "footprint_width_m": 0.030831818350432905,
+        "toroidal_length_m": 15.429870080149957,
+        "power_share": 0.7724531425846695,
+        "area_m2": 0.4757309514819631
+      }
+    }
+  },
+  "power_decay_length_m": 0.024664805801703524,
+  "edge_diffusivity_m2_s": 0.8993735519226416,
+  "connection_length_m": 55.94816454393634,
+  "incidence_sine": 0.045201596459539715,
+  "incidence_degrees": 2.590743443376951,
+  "design_bound_degrees": 3.0,
+  "swept_contour_incidence_sine": 0.2927706488786888,
+  "target_incidence_degrees": {
+    "divertor horizontal target, upper": 5.404749259784027,
+    "divertor vertical target, upper": 1.6286211342873762
+  },
+  "incidence_range_degrees": [
+    0.08846783200288492,
+    14.241958714785842
+  ],
+  "target_heat_flux_w_m2": 4544099.9622912025,
+  "parallel_heat_flux_w_m2": 100529634.30967887,
+  "target_profile": {
+    "per_element": {
+      "divertor horizontal target, upper": {
+        "arc_m": [
+          0.18069153366087723,
+          0.22678662056510507,
+          0.2728817074693329,
+          0.3189767943735607,
+          0.3650718812777885,
+          0.41116696818201637,
+          0.4572620550862442,
+          0.503357141990472,
+          0.5494522288946998,
+          0.5955473157989276,
+          0.6416424027031554,
+          0.6877374896073832
+        ],
+        "heat_flux_w_m2": [
+          70422.72985900802,
+          43979.48251148697,
+          117374.4055213676,
+          117374.4055213676,
+          0.0,
+          79218.85133844899,
+          638718.1392800988,
+          117374.4055213676,
+          0.0,
+          74691.41699256389,
+          0.0,
+          150267.29800572933
+        ],
+        "connection_m": [
+          55.98935534685032,
+          56.64202354934633,
+          45.64975396157894,
+          45.64806896960863,
+          NaN,
+          9.241055208172268,
+          8.874311223195003,
+          28.25564894977566,
+          NaN,
+          55.644248302797806,
+          NaN,
+          192.39777322574201
+        ],
+        "bin_area_m2": 0.7478008961485944,
+        "peak_heat_flux_w_m2": 638718.1392800988,
+        "integral_width_m": 0.10171527264753884,
+        "band_drift_m_per_rad": 0.2574947741449403,
+        "incidence_sine": [
+          0.24601726204862198,
+          0.14573990045621246,
+          0.05033672834063224,
+          0.05195062936105277,
+          NaN,
+          0.10027417723597333,
+          0.13028430288935713,
+          0.08810749345533253,
+          NaN,
+          0.01930607463864298,
+          NaN,
+          0.02620780798409677
+        ]
+      },
+      "divertor vertical target, upper": {
+        "arc_m": [
+          0.10267429966735983,
+          0.11159816260781771,
+          0.12052202554827562,
+          0.1294458884887335,
+          0.1383697514291914,
+          0.14729361436964927,
+          0.15621747731010716,
+          0.16514134025056507,
+          0.17406520319102295,
+          0.18298906613148086,
+          0.19191292907193874,
+          0.20083679201239663,
+          0.2097606549528545,
+          0.2186845178933124,
+          0.22760838083377027,
+          0.23653224377422818,
+          0.24545610671468607,
+          0.2543799696551439,
+          0.26330383259560186,
+          0.27222769553605974,
+          0.2811515584765176,
+          0.2900754214169755
+        ],
+        "heat_flux_w_m2": [
+          2485842.327110901,
+          3864896.340409104,
+          1479269.8377830046,
+          1358160.8312838557,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          286309.17741080764,
+          1509835.9318793516,
+          6622380.213126355,
+          2481968.5837038276,
+          0.0,
+          0.0,
+          689198.9993136557,
+          1453555.1538236376,
+          379703.63075346185,
+          0.0,
+          1615883.5902643332,
+          422107.72978536657,
+          1335300.1811585443
+        ],
+        "connection_m": [
+          19.35081888206512,
+          26.254227997239035,
+          51.30312793106335,
+          51.309139049949344,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          87.59289463782675,
+          87.59881203394836,
+          24.69662492341539,
+          9.146351255149897,
+          NaN,
+          NaN,
+          123.89078675116917,
+          123.89928971550881,
+          123.90612035033965,
+          NaN,
+          160.1905137520315,
+          160.19997734119397,
+          208.78970929420925
+        ],
+        "bin_area_m2": 0.13769404578433012,
+        "peak_heat_flux_w_m2": 6622380.213126355,
+        "integral_width_m": 0.035014802612336055,
+        "band_drift_m_per_rad": 0.15229318533032207,
+        "incidence_sine": [
+          0.05278560665145279,
+          0.038539292637468976,
+          0.004148348144382915,
+          0.0022729796526424024,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          0.01423916539283628,
+          0.012463340822038383,
+          0.10222140318786568,
+          0.1402363907177644,
+          NaN,
+          NaN,
+          0.0100817082061418,
+          0.018411756803176218,
+          0.015569910516451986,
+          NaN,
+          0.016552158859556094,
+          0.011288931767688477,
+          0.012568811156675979
+        ]
+      }
+    },
+    "peak_heat_flux_w_m2": 6622380.213126355,
+    "peak_element": "divertor vertical target, upper",
+    "peak_integral_width_m": 0.035014802612336055
+  },
+  "width_scan": [
+    {
+      "upstream_width_m": 0.005,
+      "peak_heat_flux_w_m2": 13146133.44271109,
+      "peak_integral_width_m": 0.016047280843884678,
+      "peak_element": "divertor vertical target, upper"
+    },
+    {
+      "upstream_width_m": 0.01,
+      "peak_heat_flux_w_m2": 7028202.030016557,
+      "peak_integral_width_m": 0.03142913515004714,
+      "peak_element": "divertor vertical target, upper"
+    },
+    {
+      "upstream_width_m": 0.015,
+      "peak_heat_flux_w_m2": 5461784.126676022,
+      "peak_integral_width_m": 0.0415203087751507,
+      "peak_element": "divertor vertical target, upper"
+    },
+    {
+      "upstream_width_m": 0.024664805801703524,
+      "peak_heat_flux_w_m2": 6622380.213126355,
+      "peak_integral_width_m": 0.035014802612336055,
+      "peak_element": "divertor vertical target, upper"
+    },
+    {
+      "upstream_width_m": 0.03,
+      "peak_heat_flux_w_m2": 6853847.744607473,
+      "peak_integral_width_m": 0.03402148372127266,
+      "peak_element": "divertor vertical target, upper"
+    },
+    {
+      "upstream_width_m": 0.045,
+      "peak_heat_flux_w_m2": 6260647.624338623,
+      "peak_integral_width_m": 0.03751891648799789,
+      "peak_element": "divertor vertical target, upper"
+    },
+    {
+      "upstream_width_m": 0.06,
+      "peak_heat_flux_w_m2": 5962451.598274767,
+      "peak_integral_width_m": 0.039507481013386095,
+      "peak_element": "divertor vertical target, upper"
+    }
+  ],
+  "intervals": {
+    "width_m": {
+      "median": 0.034849062177414986,
+      "percentile_5": 0.028738271639792402,
+      "percentile_95": 0.0431102191314781,
+      "samples": 64
+    },
+    "wetted_m2": {
+      "median": 1.0215620492536357,
+      "percentile_5": 0.9844329840544594,
+      "percentile_95": 1.0572612270581903,
+      "samples": 64
+    },
+    "peak_w_m2": {
+      "median": 6577047.621816564,
+      "percentile_5": 4989641.2557282485,
+      "percentile_95": 7639624.096683403,
+      "samples": 64
+    },
+    "net_peak_w_m2": {
+      "median": 6261351.598236049,
+      "percentile_5": 4874956.469773652,
+      "percentile_95": 7138595.127887027,
+      "samples": 64
+    }
+  },
+  "detachment_threshold_ev": 5.0,
+  "upstream_scan": [
+    {
+      "upstream_density_m3": 5e+18,
+      "upstream_temperature_ev": 190.58069800656907,
+      "target_temperature_ev": 184.75274075564477,
+      "target_density_m3": 2.5788615804437837e+18,
+      "target_heat_flux_w_m2": 4544099.9622912025,
+      "regime": "sheath limited"
+    },
+    {
+      "upstream_density_m3": 1e+19,
+      "upstream_temperature_ev": 125.62968677360226,
+      "target_temperature_ev": 106.29287915480582,
+      "target_density_m3": 5.909600331299436e+18,
+      "target_heat_flux_w_m2": 4544099.9622912025,
+      "regime": "sheath limited"
+    },
+    {
+      "upstream_density_m3": 2e+19,
+      "upstream_temperature_ev": 100.83038627143479,
+      "target_temperature_ev": 41.25208193644199,
+      "target_density_m3": 2.4442496363404505e+19,
+      "target_heat_flux_w_m2": 4544099.9622912025,
+      "regime": "conduction limited"
+    },
+    {
+      "upstream_density_m3": 4e+19,
+      "upstream_temperature_ev": 99.55939152422447,
+      "target_temperature_ev": 10.578017346849787,
+      "target_density_m3": 1.88238283715566e+20,
+      "target_heat_flux_w_m2": 4544099.9622912025,
+      "regime": "conduction limited"
+    },
+    {
+      "upstream_density_m3": 8e+19,
+      "upstream_temperature_ev": 99.54835600924478,
+      "target_temperature_ev": 2.6450906866225856,
+      "target_density_m3": 1.5054055653018724e+21,
+      "target_heat_flux_w_m2": 4544099.9622912025,
+      "regime": "detached"
+    }
+  ],
+  "incidence_scan": [
+    {
+      "incidence_degrees": 1.0,
+      "wetted_area_m2": 0.9909725775384643,
+      "power_decay_length_m": 0.01849230229018417,
+      "parallel_heat_flux_w_m2": 267817507.38426107,
+      "upstream_temperature_ev": 150.2413090639866,
+      "target_temperature_ev": 113.01750998882052,
+      "regime": "sheath limited"
+    },
+    {
+      "incidence_degrees": 2.0,
+      "wetted_area_m2": 1.008880150605136,
+      "power_decay_length_m": 0.02254815388301948,
+      "parallel_heat_flux_w_m2": 131551915.89235611,
+      "upstream_temperature_ev": 109.7204522621049,
+      "target_temperature_ev": 51.1288120164441,
+      "regime": "conduction limited"
+    },
+    {
+      "incidence_degrees": 3.0,
+      "wetted_area_m2": 1.0259336272024828,
+      "power_decay_length_m": 0.02600554625058942,
+      "parallel_heat_flux_w_m2": 86265370.15645495,
+      "upstream_temperature_ev": 95.70549446002748,
+      "target_temperature_ev": 28.89653456537494,
+      "regime": "conduction limited"
+    },
+    {
+      "incidence_degrees": 5.0,
+      "wetted_area_m2": 1.0513749549878861,
+      "power_decay_length_m": 0.03141525542566235,
+      "parallel_heat_flux_w_m2": 50547802.869391024,
+      "upstream_temperature_ev": 81.83748597945798,
+      "target_temperature_ev": 13.568959069948075,
+      "regime": "conduction limited"
+    },
+    {
+      "incidence_degrees": 10.0,
+      "wetted_area_m2": 1.0877844726794885,
+      "power_decay_length_m": 0.04066600955641258,
+      "parallel_heat_flux_w_m2": 24521262.898879573,
+      "upstream_temperature_ev": 66.52344688922119,
+      "target_temperature_ev": 4.8326206401109015,
+      "regime": "detached"
+    },
+    {
+      "incidence_degrees": 17.023903755340772,
+      "wetted_area_m2": 1.0911998102210199,
+      "power_decay_length_m": 0.0490605726504937,
+      "parallel_heat_flux_w_m2": 14498534.348917274,
+      "upstream_temperature_ev": 57.24771240618404,
+      "target_temperature_ev": 2.281279272638466,
+      "regime": "detached"
+    }
+  ],
+  "detachment_scan": [
+    {
+      "upstream_density_m3": 5e+18,
+      "attached_target_ev": 184.75274075564477,
+      "power_loss_for_detachment": 0.915,
+      "detached_target_ev": 4.892294721647227,
+      "target_flux_m2_s": 1.5573706392882235e+24,
+      "equilibrium_density_bound_m3": 3.256716714120481e+20,
+      "equilibrium_pressure_bound_pa": 156.53506268763277
+    },
+    {
+      "upstream_density_m3": 1e+19,
+      "attached_target_ev": 106.29287915480582,
+      "power_loss_for_detachment": 0.8300000000000001,
+      "detached_target_ev": 4.892294721647227,
+      "target_flux_m2_s": 3.114741278576447e+24,
+      "equilibrium_density_bound_m3": 6.513433428240961e+20,
+      "equilibrium_pressure_bound_pa": 313.07012537526555
+    },
+    {
+      "upstream_density_m3": 2e+19,
+      "attached_target_ev": 41.25208193644199,
+      "power_loss_for_detachment": 0.66,
+      "detached_target_ev": 4.892294721647232,
+      "target_flux_m2_s": 6.229482557152891e+24,
+      "equilibrium_density_bound_m3": 1.3026866856481918e+21,
+      "equilibrium_pressure_bound_pa": 626.1402507505308
+    },
+    {
+      "upstream_density_m3": 4e+19,
+      "attached_target_ev": 10.578017346849787,
+      "power_loss_for_detachment": 0.315,
+      "detached_target_ev": 4.964500810199449,
+      "target_flux_m2_s": 1.2368033547941787e+25,
+      "equilibrium_density_bound_m3": 2.586358093587403e+21,
+      "equilibrium_pressure_bound_pa": 1243.1407514107566
+    },
+    {
+      "upstream_density_m3": 8e+19,
+      "attached_target_ev": 2.6450906866225856,
+      "power_loss_for_detachment": 0.0,
+      "detached_target_ev": 2.6450906866225856,
+      "target_flux_m2_s": 3.3887934783668336e+25,
+      "equilibrium_density_bound_m3": 7.086521399134486e+21,
+      "equilibrium_pressure_bound_pa": 3406.157700610278
+    }
+  ]
+}

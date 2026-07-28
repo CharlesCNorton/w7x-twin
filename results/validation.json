@@ -1,0 +1,399 @@
+{
+  "geometry": {
+    "geometry": "e0624a09d0db",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "checks": [
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, npc1, against simsopt",
+      "value": 1.246279473392117e-13,
+      "unit": "%",
+      "published": "8.5520 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, npc2, against simsopt",
+      "value": 2.0947896993543607e-14,
+      "unit": "%",
+      "published": "8.4799 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, npc3, against simsopt",
+      "value": 4.194855918894417e-14,
+      "unit": "%",
+      "published": "8.4692 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, npc4, against simsopt",
+      "value": 4.1534373933916253e-14,
+      "unit": "%",
+      "published": "8.5537 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, npc5, against simsopt",
+      "value": 6.265768680179914e-14,
+      "unit": "%",
+      "published": "8.5051 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, pca, against simsopt",
+      "value": 1.7281774418002278e-14,
+      "unit": "%",
+      "published": "10.2788 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Coil geometry against simsopt's independent W7-X set",
+      "quantity": "filament length, pcb, against simsopt",
+      "value": 5.3346298677896984e-14,
+      "unit": "%",
+      "published": "9.9896 m",
+      "band": [
+        0.0,
+        0.05
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Vacuum field, standard configuration at 12883 A/turn",
+      "quantity": "|B| at R=5.931 m, bean plane",
+      "value": 2.520044885231644,
+      "unit": "T",
+      "published": "2.5 T nominal",
+      "band": [
+        2.5,
+        2.54
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Vacuum field, standard configuration at 12883 A/turn",
+      "quantity": "mirror term on that circle",
+      "value": 4.653569813962466,
+      "unit": "%",
+      "published": "about 5 %",
+      "band": [
+        4.4,
+        4.9
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "major radius",
+      "value": 5.5153410021081,
+      "unit": "m",
+      "published": "5.5 m",
+      "band": [
+        5.49,
+        5.54
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "minor radius",
+      "value": 0.49073620087963005,
+      "unit": "m",
+      "published": "about 0.5 m",
+      "band": [
+        0.48,
+        0.5
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "aspect ratio",
+      "value": 11.238912051366936,
+      "unit": "",
+      "published": "about 11",
+      "band": [
+        11.0,
+        11.5
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "plasma volume",
+      "value": 26.217924170393477,
+      "unit": "m^3",
+      "published": "26-30 m^3",
+      "band": [
+        25.8,
+        26.7
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "transform on axis",
+      "value": 0.8495852194753465,
+      "unit": "",
+      "published": "about 0.85",
+      "band": [
+        0.84,
+        0.86
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "transform at edge",
+      "value": 0.9537044689265297,
+      "unit": "",
+      "published": "just below 5/5",
+      "band": [
+        0.945,
+        0.965
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "mirror term",
+      "value": 4.394507501833302,
+      "unit": "%",
+      "published": "about 5 %",
+      "band": [
+        4.25,
+        4.55
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, standard configuration",
+      "quantity": "magnetic well",
+      "value": 1.0133237557887997,
+      "unit": "%",
+      "published": "about 1 %",
+      "band": [
+        0.9,
+        1.15
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, high mirror (IPP reference 167)",
+      "quantity": "mirror term",
+      "value": 10.054052970029298,
+      "unit": "%",
+      "published": "about 10 %",
+      "band": [
+        9.8,
+        10.4
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Equilibrium, high mirror (IPP reference 167)",
+      "quantity": "transform on axis",
+      "value": 0.8564572195372704,
+      "unit": "",
+      "published": "about 0.86",
+      "band": [
+        0.85,
+        0.865
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Operating point",
+      "quantity": "modular current for B0 = 2.5 T",
+      "value": 13771.484375,
+      "unit": "A/turn",
+      "published": "below the 17600 A conductor limit",
+      "band": [
+        13700.0,
+        13850.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Operating point",
+      "quantity": "amp-turns per coil",
+      "value": 1.4873203125,
+      "unit": "MA",
+      "published": "about 1.5 MA-turns",
+      "band": [
+        1.47,
+        1.51
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Traced field, sharing no machinery with the equilibrium solver",
+      "quantity": "traced magnetic axis",
+      "value": 5.947424996569918,
+      "unit": "m",
+      "published": "R = 5.947 m",
+      "band": [
+        5.94,
+        5.955
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Traced field, sharing no machinery with the equilibrium solver",
+      "quantity": "|B| on the traced axis",
+      "value": 2.501318827463678,
+      "unit": "T",
+      "published": "2.5 T",
+      "band": [
+        2.49,
+        2.52
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "trim mounting radius, pinned",
+      "value": 7.175929409425647,
+      "unit": "m",
+      "published": "outer vessel outboard surface at 7.570 m",
+      "band": [
+        7.0,
+        7.689654737244903
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "winding pack, turn direction",
+      "value": 155.60000091936516,
+      "unit": "mm",
+      "published": "156.0 mm at the published pitch",
+      "band": [
+        153.5,
+        158.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "winding pack, layer direction",
+      "value": 215.8807109234255,
+      "unit": "mm",
+      "published": "inside the 208.5 to 225.4 mm the stagger left",
+      "band": [
+        208.5,
+        225.4
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "outer vessel outboard radius",
+      "value": 7.569679620626987,
+      "unit": "m",
+      "published": "inside the pinned 7.000 to 7.690 m",
+      "band": [
+        7.0,
+        7.69
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "released plasma model, median residual",
+      "value": 20.395110216408465,
+      "unit": "mm",
+      "published": "the released surface against the twin's boundary",
+      "band": [
+        0.0,
+        35.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "filaments inside the released coil solids",
+      "value": 13.201304952189512,
+      "unit": "mm",
+      "published": "winding-package asymmetry scale",
+      "band": [
+        0.0,
+        20.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "vessel.part against the released vessel",
+      "value": 13.319635291555416,
+      "unit": "mm",
+      "published": "the contour every trace stops on",
+      "band": [
+        0.0,
+        25.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "stepped-pressure island, interfaces bracketing",
+      "value": 73.55159195181915,
+      "unit": "mm",
+      "published": "an island the placement leaves room for",
+      "band": [
+        5.0,
+        200.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Records the newer analyses wrote, checked where they stand",
+      "quantity": "coil deviations separated by the second harmonic",
+      "value": 152.01597988283737,
+      "unit": "x",
+      "published": "a discrimination the 1/1 alone cannot make",
+      "band": [
+        10.0,
+        1000000.0
+      ],
+      "agrees": true
+    }
+  ],
+  "agreed": 32,
+  "total": 32
+}

@@ -1,0 +1,30 @@
+{
+  "node": "ragnarok",
+  "tools": {
+    "monkes": {
+      "path": "/home/unsymbolic/monkes/bin/main_monkes.x",
+      "sha256": "521c528e958fbe0ea94c0002586230e2f0689ef448f67f065ee0d090cf46ebc1",
+      "bytes": 647496
+    },
+    "spec": {
+      "path": "/home/unsymbolic/src/SPEC/build/build/bin/xspec",
+      "sha256": "6ba51323921c8bc8347a913386858e625499a4c352f82825e3029e781ca26e2c",
+      "bytes": 2931736
+    },
+    "stella": {
+      "path": "/home/unsymbolic/src/stella/build/gnu/COMPILATION/stella",
+      "sha256": "a7be4f880330b73dbfaed8adb0039a5d901e1257bc041c4fa9ed6f3101ba2744",
+      "bytes": 4734728
+    },
+    "desc_python": {
+      "path": "/home/unsymbolic/.venv/bin/python",
+      "sha256": "bb9b606c5bf61af2f6a4796ae982ddd0dc7ab24d3ee84f3eba3ab3e0475e5e7f",
+      "bytes": 5231992
+    },
+    "vmecpp": {
+      "path": "venv/lib/python3.12/site-packages/vmecpp/cpp/_vmecpp.cpython-312-x86_64-linux-gnu.so",
+      "sha256": "794725dab414b3dfce9b1198d373cc2ada248e71d4510e5de5b0dd328f5cb75b",
+      "bytes": 3739560
+    }
+  }
+}

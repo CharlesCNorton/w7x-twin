@@ -1,0 +1,65 @@
+{
+  "heating_w": 5000000.0,
+  "crossing_power_w": 4630000.0,
+  "parallel_flux_w_m2": 108460123.92096233,
+  "connection_length_m": 88.0,
+  "incidence_sine": 0.0447,
+  "wetted_area_m2": 0.955,
+  "cases": [
+    {
+      "upstream_density_m3": 5e+18,
+      "target_temperature_ev": 192.615637622386,
+      "target_flux_m2_s": 5.0207676061584797e+23,
+      "mean_free_path_m": 0.06715015045352923,
+      "neutral_density_m3": 2.094296612574725e+19,
+      "pressure_pa": 0.08674465571564045,
+      "momentum_loss": 0.28059199799513274,
+      "power_loss": 0.022250084876889537,
+      "target_temperature_with_losses_ev": 239.987326185371
+    },
+    {
+      "upstream_density_m3": 1e+19,
+      "target_temperature_ev": 106.18585285650873,
+      "target_flux_m2_s": 9.107412407572509e+23,
+      "mean_free_path_m": 0.04186295847888233,
+      "neutral_density_m3": 3.798945589735003e+19,
+      "pressure_pa": 0.15735031288566126,
+      "momentum_loss": 0.3295615157487497,
+      "power_loss": 0.040360501615084886,
+      "target_temperature_with_losses_ev": 148.52712862255646
+    },
+    {
+      "upstream_density_m3": 2e+19,
+      "target_temperature_ev": 36.067818511081825,
+      "target_flux_m2_s": 2.6812776423306596e+24,
+      "mean_free_path_m": 0.02054008858723017,
+      "neutral_density_m3": 1.1184327027639358e+20,
+      "pressure_pa": 0.4632488977914976,
+      "momentum_loss": 0.4635944984476429,
+      "power_loss": 0.11882377317601009,
+      "target_temperature_with_losses_ev": 83.77316970456958
+    },
+    {
+      "upstream_density_m3": 4e+19,
+      "target_temperature_ev": 9.10286036218469,
+      "target_flux_m2_s": 1.062389529593901e+25,
+      "mean_free_path_m": 0.018430077736962515,
+      "neutral_density_m3": 4.43151121022655e+20,
+      "pressure_pa": 1.835508456266423,
+      "momentum_loss": 0.7978833617843715,
+      "power_loss": 0.4708096263365851,
+      "target_temperature_with_losses_ev": 59.22989525257375
+    },
+    {
+      "upstream_density_m3": 8e+19,
+      "target_temperature_ev": 2.275890879422608,
+      "target_flux_m2_s": 4.249229884252549e+25,
+      "mean_free_path_m": 0.47432692634540674,
+      "neutral_density_m3": 1.7724675688485757e+21,
+      "pressure_pa": 7.341466729389651,
+      "momentum_loss": 0.9980915220202515,
+      "power_loss": 0.95,
+      "target_temperature_with_losses_ev": 2.2758908794226094
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "w7x-twin"
+version = "0.1.0"
+description = "Free-boundary equilibrium and field-line model of the Wendelstein 7-X stellarator"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+# numpy 2.0 is the floor: the quadratures call np.trapezoid, which 1.x does not
+# provide. vmecpp and simsopt are pinned because the reported numbers are solver
+# output, and an unpinned solver makes them unreproducible.
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "matplotlib>=3.8",
+    "vmecpp @ git+https://github.com/proximafusion/vmecpp@f5dbf764fb3627cfaea72747a06a77fcc32e7938",
+    "simsopt==1.10.6",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[project.urls]
+Repository = "https://github.com/CharlesCNorton/w7x-twin"
+
+[tool.setuptools.package-data]
+"w7x_twin.records" = ["*.json"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+w7x-twin = "w7x_twin.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

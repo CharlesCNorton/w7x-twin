@@ -1,0 +1,126 @@
+{
+  "geometry": {
+    "geometry": "e0624a09d0db",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "minor_radius_m": 0.49073620087963005,
+  "throughput_per_s": 1e+22,
+  "prescribed_peaking": 1.0545859256792445,
+  "published_band": [
+    1.2,
+    2.8
+  ],
+  "sources": [
+    {
+      "source_centre_s": 0.95,
+      "peaking": 3.9070804239476633,
+      "axis_density_m3": 2.5413601084204327e+21,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.8,
+      "peaking": 4.1997727468414565,
+      "axis_density_m3": 4.404360928234779e+21,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.6,
+      "peaking": 5.6313817824990435,
+      "axis_density_m3": 9.137785814207497e+21,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.4,
+      "peaking": 9.757475812373084,
+      "axis_density_m3": 1.7910064148756203e+22,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.2,
+      "peaking": 18.530394917428104,
+      "axis_density_m3": 3.439651397613103e+22,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.05,
+      "peaking": 27.05340627227998,
+      "axis_density_m3": 5.0208350015157545e+22,
+      "inside_published": false
+    }
+  ],
+  "calibrated_pinch_m_s": -0.2476881188635549,
+  "sources_at_calibrated_pinch": [
+    {
+      "source_centre_s": 0.95,
+      "peaking": 2.0000000000000004,
+      "inside_published": true
+    },
+    {
+      "source_centre_s": 0.8,
+      "peaking": 2.1688766417946295,
+      "inside_published": true
+    },
+    {
+      "source_centre_s": 0.6,
+      "peaking": 3.0153479980847013,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.4,
+      "peaking": 5.7076051935802,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.2,
+      "peaking": 12.413050273981284,
+      "inside_published": false
+    },
+    {
+      "source_centre_s": 0.05,
+      "peaking": 19.661106744968087,
+      "inside_published": false
+    }
+  ],
+  "gas_fuelled": {
+    "ionisation_centroid_s": 0.9629035688709332,
+    "peaking": 1.952271365403871,
+    "inside_published": true
+  },
+  "pellet_evolution": {
+    "source_centre_s": 0.3,
+    "initial_peaking": 1.0546030417781067,
+    "final_peaking": 2.008267526588185,
+    "time_to_published_s": 0.193,
+    "times_s": [
+      0.0,
+      0.02,
+      0.04,
+      0.06,
+      0.08,
+      0.1,
+      0.12,
+      0.14,
+      0.16,
+      0.18,
+      0.193
+    ],
+    "peaking": [
+      1.0546030417781067,
+      1.1577584645926304,
+      1.0831576585788898,
+      1.0857614750568836,
+      1.1466661982360435,
+      1.247756740313845,
+      1.3785922804211492,
+      1.5319946060122038,
+      1.702316621177428,
+      1.8848909521049702,
+      2.008267526588185
+    ]
+  }
+}

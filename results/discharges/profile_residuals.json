@@ -1,0 +1,112 @@
+{
+  "geometry": {
+    "geometry": "c6a51d4a7d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "discharges": [
+    {
+      "discharge": "20181016.037",
+      "heating_power_w": 5000000.0,
+      "confinement_over_iss04": 1.3,
+      "stored_energy_j": 840473.5937689403,
+      "confinement_over_iss04_modelled": 1.3212377692412574,
+      "checks": [
+        {
+          "quantity": "electron temperature",
+          "points": 41,
+          "median_relative_residual": 0.2839044576059081,
+          "worst_relative_residual": 2.5092190871757865,
+          "inside_the_band": 0.07317073170731707,
+          "band_half_width_median": 0.15825991771924364,
+          "measured_peak": 3.4032232472904678,
+          "modelled_peak": 3.237669281641998,
+          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, digitised from the vector paths of the published figures",
+          "figure": "7a",
+          "axis_residual": {
+            "abscissa": 1.100470366333095e-06,
+            "ordinate": 0.0020826583461417414
+          }
+        },
+        {
+          "quantity": "ion temperature",
+          "points": 41,
+          "median_relative_residual": 0.37196546561211147,
+          "worst_relative_residual": 1.0482346895191132,
+          "inside_the_band": 0.07317073170731707,
+          "band_half_width_median": 0.13273508158136527,
+          "measured_peak": 3.123016440684787,
+          "modelled_peak": 1.968902061919358,
+          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, digitised from the vector paths of the published figures",
+          "figure": "7a",
+          "axis_residual": {
+            "abscissa": 1.100470366333095e-06,
+            "ordinate": 0.0020826583461417414
+          }
+        },
+        {
+          "quantity": "electron density",
+          "points": 41,
+          "median_relative_residual": 0.0006842420140981593,
+          "worst_relative_residual": 0.02975822475015525,
+          "inside_the_band": 0.0,
+          "band_half_width_median": 0.0,
+          "measured_peak": 8.0,
+          "modelled_peak": 8.0,
+          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, digitised from the vector paths of the published figures",
+          "figure": "6",
+          "axis_residual": {
+            "abscissa": 0.043764170225395915,
+            "ordinate": 0.004270697111996569
+          }
+        }
+      ]
+    },
+    {
+      "discharge": "20180920.017",
+      "heating_power_w": 5000000.0,
+      "confinement_over_iss04": 0.7,
+      "stored_energy_j": 1347719.237175148,
+      "confinement_over_iss04_modelled": 1.5936750473258325,
+      "checks": [
+        {
+          "quantity": "electron temperature",
+          "points": 41,
+          "median_relative_residual": 0.4634289865261399,
+          "worst_relative_residual": 2.169988958883993,
+          "inside_the_band": 0.0,
+          "band_half_width_median": 0.04119513932322,
+          "measured_peak": 2.8905862711574812,
+          "modelled_peak": 3.223795794986704,
+          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, digitised from the vector paths of the published figures",
+          "figure": "7b",
+          "axis_residual": {
+            "abscissa": 1.2759349125035513e-06,
+            "ordinate": 0.0020827636899252155
+          }
+        },
+        {
+          "quantity": "ion temperature",
+          "points": 41,
+          "median_relative_residual": 0.6718376582848886,
+          "worst_relative_residual": 2.397206806746091,
+          "inside_the_band": 0.0,
+          "band_half_width_median": 0.0666287433274304,
+          "measured_peak": 1.4626926085879377,
+          "modelled_peak": 2.227140474631138,
+          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, digitised from the vector paths of the published figures",
+          "figure": "7b",
+          "axis_residual": {
+            "abscissa": 1.2759349125035513e-06,
+            "ordinate": 0.0020827636899252155
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1323 @@
+<title>Wendelstein 7-X digital twin</title>
+<style>
+{{FONTS_CSS}}
+
+:root {
+  --ground: #070b10;
+  --panel: #0a1017;
+  --rule: #18232f;
+  --ink: #c9d7e3;
+  --ink-dim: #708698;
+  --ink-faint: #46586a;
+  --copper: #d38a3a;
+  --plasma: #e8542a;
+  --cool: #4ea3d8;
+  --unit: #3fd3a0;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --ground: #e4e9ed; --panel: #f4f7f9; --rule: #c9d3db;
+    --ink: #16222c; --ink-dim: #556775; --ink-faint: #8496a4;
+    --copper: #a4661c; --plasma: #c53c15; --cool: #1f6d9e; --unit: #128360;
+    color-scheme: light;
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #070b10; --panel: #0a1017; --rule: #18232f;
+  --ink: #c9d7e3; --ink-dim: #708698; --ink-faint: #46586a;
+  --copper: #d38a3a; --plasma: #e8542a; --cool: #4ea3d8; --unit: #3fd3a0;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --ground: #e4e9ed; --panel: #f4f7f9; --rule: #c9d3db;
+  --ink: #16222c; --ink-dim: #556775; --ink-faint: #8496a4;
+  --copper: #a4661c; --plasma: #c53c15; --cool: #1f6d9e; --unit: #128360;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 500 14px/1.45 "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#stage { position: fixed; inset: 0; }
+canvas { display: block; }
+
+#rail {
+  position: fixed; inset: 0 auto 0 0; width: 276px;
+  display: flex; flex-direction: column; overflow-y: auto;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  border-right: 1px solid var(--rule); backdrop-filter: blur(9px);
+}
+
+.group { padding: 13px 18px; border-bottom: 1px solid var(--rule); }
+.group:last-child { border-bottom: 0; }
+
+h1 { margin: 0; font-size: 25px; font-weight: 600; line-height: 1.05; text-wrap: balance; }
+
+.eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-faint); margin-bottom: 9px;
+}
+.caption { color: var(--ink-dim); font-size: 13.5px; margin-top: 3px; }
+.mono {
+  font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  font-size: 10.5px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.hash { color: var(--ink-faint); margin-top: 7px; word-break: break-all; }
+
+table { border-collapse: collapse; width: 100%; }
+td { padding: 2px 0; font-size: 13.5px; color: var(--ink-dim); }
+td + td {
+  text-align: right; color: var(--ink);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11.5px; font-variant-numeric: tabular-nums;
+}
+td.live + td { color: var(--copper); }
+
+details.group summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 8px; }
+details.group summary::-webkit-details-marker { display: none; }
+details.group summary .eyebrow { margin-bottom: 0; }
+details.group[open] summary { margin-bottom: 9px; }
+#readout td { font-size: 12.5px; }
+#readout td.section {
+  padding: 10px 0 2px; color: var(--ink-faint); font-size: 10px;
+  font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+}
+#readout td.meta {
+  padding: 0 0 5px; color: var(--ink-faint);
+  font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 10px;
+}
+#readout td.off { color: var(--plasma); }
+
+label { display: flex; align-items: center; gap: 9px; padding: 3px 0; cursor: pointer; font-size: 13.5px; }
+label:hover { color: var(--copper); }
+input[type="checkbox"] { accent-color: var(--copper); width: 14px; height: 14px; flex: none; }
+input[type="range"] { width: 100%; accent-color: var(--copper); margin: 2px 0; }
+:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.swatch { width: 3px; height: 13px; border-radius: 1px; flex: none; }
+
+.circuit { display: grid; grid-template-columns: 34px 1fr 58px; align-items: center; gap: 7px; }
+.circuit span:first-child { font-size: 12px; color: var(--ink-dim); }
+.circuit span:last-child {
+  text-align: right; font-family: "IBM Plex Mono", monospace; font-size: 10.5px;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+}
+
+.presets { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+button {
+  font: 600 11.5px/1 "Barlow Semi Condensed", sans-serif; letter-spacing: 0.03em;
+  color: var(--ink-dim); background: transparent; border: 1px solid var(--rule);
+  border-radius: 2px; padding: 5px 8px; cursor: pointer;
+}
+button:hover { color: var(--copper); border-color: var(--copper); }
+button[aria-pressed="true"] { color: var(--ground); background: var(--copper); border-color: var(--copper); }
+
+#progress { height: 2px; background: var(--rule); margin-top: 9px; }
+#progress > i { display: block; height: 100%; width: 0; background: var(--copper); transition: width .1s linear; }
+
+#iota { width: 100%; height: 62px; display: block; }
+.ramp { height: 7px; border-radius: 1px; margin: 7px 0 5px; }
+.ramp-ends { display: flex; justify-content: space-between; color: var(--ink-faint); }
+.hint { color: var(--ink-faint); font-size: 12.5px; line-height: 1.5; }
+
+#loading {
+  position: fixed; inset: 0; display: grid; place-items: center;
+  color: var(--ink-dim); font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+@media (max-width: 780px) {
+  #rail { inset: 0 0 auto 0; width: 100%; max-height: 46vh; border-right: 0; border-bottom: 1px solid var(--rule); }
+}
+</style>
+
+<div id="stage"></div>
+<div id="loading">building geometry</div>
+
+<div id="rail" hidden>
+  <div class="group">
+    <h1>Wendelstein 7-X</h1>
+    <div class="caption" id="config-label"></div>
+    <div class="mono hash" id="geometry-version"></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Coil currents, A per turn</div>
+    <div class="presets" id="presets"></div>
+    <div id="circuits"></div>
+  </div>
+
+  <div class="group" id="auxiliary-group" hidden>
+    <div class="eyebrow">Trim and control circuits, A per turn</div>
+    <div id="auxiliary"></div>
+    <div class="hint" id="auxiliary-note"></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Plasma pressure</div>
+    <input type="range" id="beta" min="0" max="2.1" value="0" step="0.05"
+           aria-label="volume-averaged beta in percent">
+    <div class="hint mono" id="beta-label">⟨β⟩ 0.00 %</div>
+    <div class="hint" id="beta-note"></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Traced from those currents</div>
+    <table id="live"></table>
+    <div id="progress"><i></i></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Rotational transform</div>
+    <canvas id="iota" width="464" height="124"></canvas>
+    <div class="hint" id="iota-note"></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Machine</div>
+    <table id="facts"></table>
+  </div>
+
+  <details class="group" id="readout-group">
+    <summary>
+      <div class="eyebrow">Readout</div>
+      <div class="hint mono" id="readout-count"></div>
+    </summary>
+    <table id="readout"></table>
+  </details>
+
+  <div class="group">
+    <div class="eyebrow">Layers</div>
+    <div id="layers"></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Connection length</div>
+    <div class="ramp" id="ramp"></div>
+    <div class="ramp-ends mono"><span id="ramp-lo"></span><span id="ramp-hi"></span></div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Cutaway</div>
+    <label><input type="checkbox" id="wedge-on"> remove a wedge</label>
+    <input type="range" id="wedge" min="10" max="170" value="90" step="1" aria-label="wedge angle">
+    <div class="hint mono" id="wedge-label">90°</div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">Sound</div>
+    <label><input type="checkbox" id="sound-on"> two tones at the traced ratio</label>
+    <div class="hint">
+      The base pitch follows the field on the traced axis; the second tone sits at the
+      edge transform times it, so a locked island chain is audible as consonance.
+      Derived from the traced state, not recorded.
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="hint">
+      Drag to orbit, wheel to zoom, right-drag or shift-drag to pan.
+      Space halts the rotation, F reframes.
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="eyebrow">What this page resolves</div>
+    <div class="hint">
+      Against the model: the axis to 0.05 mm, the winding number of the outermost line to
+      4 × 10⁻⁴, a strike point to 134 mm, at the scale of the 122 mm the strike line
+      moves at 12.9 kA of bootstrap current. The stored grid accounts for 0.2 mm of the
+      strike error; the rest is this page's 48-step tracer.
+    </div>
+  </div>
+</div>
+
+<script type="module">
+{{THREE_JS}}
+
+const BUNDLE = {{GEOMETRY_JSON}};
+const FIELD = {{FIELD_JSON}};
+
+/* ---------- payload decoding ------------------------------------------ */
+
+const ARRAY_TYPES = {
+  float32: Float32Array, float64: Float64Array,
+  uint32: Uint32Array, int32: Int32Array, uint8: Uint8Array,
+};
+
+function decode(entry) {
+  const binary = atob(entry.data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new ARRAY_TYPES[entry.dtype](bytes.buffer);
+}
+
+function meshGeometry(record) {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(decode(record.vertices), 3));
+  geometry.setIndex(new BufferAttribute(decode(record.triangles), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function token(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ---------- vacuum field, recomputed from the response table ------------ */
+
+/* The response table holds the field each circuit produces at unit current per turn,
+   so a change of coil current is one weighted sum over circuits. That is the same
+   operation the model performs, carried out here on a coarsened grid. */
+class VacuumField {
+  constructor(payload) {
+    const g = payload.grid;
+    Object.assign(this, g);
+    this.period = 2 * Math.PI / g.num_field_periods;
+    this.dr = (g.r_max - g.r_min) / (g.num_r - 1);
+    this.dz = (g.z_max - g.z_min) / (g.num_z - 1);
+    this.dphi = this.period / g.num_phi;
+    this.plane = g.num_z * g.num_r;
+    this.count = g.num_phi * this.plane;
+    this.circuits = payload.circuits;
+
+    this.source = {
+      r: decode(payload.b_r), p: decode(payload.b_p), z: decode(payload.b_z),
+    };
+    /* The plasma-current field at one pressure. At fixed profile shape it scales with
+       beta, so one block and a weight cover the pressure axis. */
+    this.plasma = payload.plasma
+      ? {
+        betaReference: payload.plasma.beta_reference,
+        r: decode(payload.plasma.b_r),
+        p: decode(payload.plasma.b_p),
+        z: decode(payload.plasma.b_z),
+      }
+      : null;
+    this.br = new Float32Array(this.count);
+    this.bp = new Float32Array(this.count);
+    this.bz = new Float32Array(this.count);
+
+    const contour = payload.vessel_contour;
+    this.wallR = decode(contour.r);
+    this.wallZ = decode(contour.z);
+    this.wallPoints = this.wallR.length / g.num_phi;
+
+    /* The trim and control circuits on their own grid: coarse, over the whole torus and
+       with no symmetry assumed, because one energised trim coil has neither. */
+    this.aux = null;
+    if (payload.auxiliary) {
+      const a = payload.auxiliary.grid;
+      const plane = a.num_z * a.num_r;
+      const count = a.num_phi * plane;
+      this.aux = {
+        ...a,
+        circuits: payload.auxiliary.circuits,
+        blocks: payload.auxiliary.blocks,
+        plane,
+        count,
+        period: 2 * Math.PI,
+        dr: (a.r_max - a.r_min) / (a.num_r - 1),
+        dz: (a.z_max - a.z_min) / (a.num_z - 1),
+        dphi: (2 * Math.PI) / a.num_phi,
+        source: {
+          r: decode(payload.auxiliary.b_r),
+          p: decode(payload.auxiliary.b_p),
+          z: decode(payload.auxiliary.b_z),
+        },
+        br: new Float32Array(count),
+        bp: new Float32Array(count),
+        bz: new Float32Array(count),
+        active: false,
+      };
+    }
+  }
+
+  /* Contract the per-circuit response with the currents, then add the plasma-current
+     field weighted by the pressure asked for. The auxiliary circuits are contracted onto
+     their own grid, so an energised trim coil costs one extra lookup per evaluation and
+     nothing when every auxiliary current is zero. */
+  setCurrents(currents, beta = 0, auxiliary = null) {
+    const { br, bp, bz, count, source } = this;
+    br.fill(0); bp.fill(0); bz.fill(0);
+    for (let c = 0; c < currents.length; c++) {
+      const weight = currents[c];
+      if (weight === 0) continue;
+      const base = c * count;
+      for (let i = 0; i < count; i++) {
+        br[i] += weight * source.r[base + i];
+        bp[i] += weight * source.p[base + i];
+        bz[i] += weight * source.z[base + i];
+      }
+    }
+    if (this.plasma && beta > 0) {
+      const weight = beta / this.plasma.betaReference;
+      for (let i = 0; i < count; i++) {
+        br[i] += weight * this.plasma.r[i];
+        bp[i] += weight * this.plasma.p[i];
+        bz[i] += weight * this.plasma.z[i];
+      }
+    }
+    if (!this.aux) return;
+    const aux = this.aux;
+    aux.br.fill(0); aux.bp.fill(0); aux.bz.fill(0);
+    aux.active = false;
+    if (!auxiliary) return;
+    /* Each declared circuit reads a stored block at a toroidal offset: the four type A
+       trim coils are one winding at 72 degree intervals, and a rigid rotation about the
+       machine axis shifts the toroidal index without mixing cylindrical components. */
+    for (let c = 0; c < aux.circuits.length; c++) {
+      const weight = auxiliary[c];
+      if (weight === 0) continue;
+      aux.active = true;
+      const entry = aux.circuits[c];
+      const base = entry.block * aux.count;
+      for (let p = 0; p < aux.num_phi; p++) {
+        const from = ((p - entry.rotate) % aux.num_phi + aux.num_phi) % aux.num_phi;
+        const to = p * aux.plane;
+        const read = base + from * aux.plane;
+        for (let i = 0; i < aux.plane; i++) {
+          aux.br[to + i] += weight * aux.source.r[read + i];
+          aux.bp[to + i] += weight * aux.source.p[read + i];
+          aux.bz[to + i] += weight * aux.source.z[read + i];
+        }
+      }
+    }
+  }
+
+  /* Trilinear interpolation, wrapping in the toroidal angle. */
+  at(R, phi, Z, out) {
+    const fr = (R - this.r_min) / this.dr;
+    const fz = (Z - this.z_min) / this.dz;
+    if (!(fr >= 0 && fr <= this.num_r - 1 && fz >= 0 && fz <= this.num_z - 1)) return false;
+    let a = phi % this.period;
+    if (a < 0) a += this.period;
+    const fp = a / this.dphi;
+
+    const ir = Math.min(this.num_r - 2, fr | 0);
+    const iz = Math.min(this.num_z - 2, fz | 0);
+    const ip = fp | 0;
+    const tr = fr - ir, tz = fz - iz, tp = fp - ip;
+    const ip1 = (ip + 1) % this.num_phi;
+
+    const i000 = ip * this.plane + iz * this.num_r + ir;
+    const i100 = ip1 * this.plane + iz * this.num_r + ir;
+    const w = [
+      (1 - tp) * (1 - tz) * (1 - tr), (1 - tp) * (1 - tz) * tr,
+      (1 - tp) * tz * (1 - tr), (1 - tp) * tz * tr,
+      tp * (1 - tz) * (1 - tr), tp * (1 - tz) * tr,
+      tp * tz * (1 - tr), tp * tz * tr,
+    ];
+    const idx = [
+      i000, i000 + 1, i000 + this.num_r, i000 + this.num_r + 1,
+      i100, i100 + 1, i100 + this.num_r, i100 + this.num_r + 1,
+    ];
+    let r = 0, p = 0, z = 0;
+    for (let k = 0; k < 8; k++) {
+      r += w[k] * this.br[idx[k]];
+      p += w[k] * this.bp[idx[k]];
+      z += w[k] * this.bz[idx[k]];
+    }
+    if (this.aux && this.aux.active) {
+      const g = this.aux;
+      const gr = (R - g.r_min) / g.dr;
+      const gz = (Z - g.z_min) / g.dz;
+      if (gr >= 0 && gr <= g.num_r - 1 && gz >= 0 && gz <= g.num_z - 1) {
+        let b = phi % g.period;
+        if (b < 0) b += g.period;
+        const gp = b / g.dphi;
+        const jr = Math.min(g.num_r - 2, gr | 0);
+        const jz = Math.min(g.num_z - 2, gz | 0);
+        const jp = gp | 0;
+        const ur = gr - jr, uz = gz - jz, up = gp - jp;
+        const jp1 = (jp + 1) % g.num_phi;
+        const j000 = jp * g.plane + jz * g.num_r + jr;
+        const j100 = jp1 * g.plane + jz * g.num_r + jr;
+        const wa = [
+          (1 - up) * (1 - uz) * (1 - ur), (1 - up) * (1 - uz) * ur,
+          (1 - up) * uz * (1 - ur), (1 - up) * uz * ur,
+          up * (1 - uz) * (1 - ur), up * (1 - uz) * ur,
+          up * uz * (1 - ur), up * uz * ur,
+        ];
+        const ja = [
+          j000, j000 + 1, j000 + g.num_r, j000 + g.num_r + 1,
+          j100, j100 + 1, j100 + g.num_r, j100 + g.num_r + 1,
+        ];
+        for (let k = 0; k < 8; k++) {
+          r += wa[k] * g.br[ja[k]];
+          p += wa[k] * g.bp[ja[k]];
+          z += wa[k] * g.bz[ja[k]];
+        }
+      }
+    }
+    out[0] = r; out[1] = p; out[2] = z;
+    return true;
+  }
+
+  /* True where the point lies outside the vessel contour of the nearest cut. */
+  outsideWall(R, phi, Z) {
+    let a = phi % this.period;
+    if (a < 0) a += this.period;
+    const cut = Math.min(this.num_phi - 1, Math.round(a / this.dphi) % this.num_phi);
+    const base = cut * this.wallPoints;
+    let inside = false;
+    for (let i = 0, j = this.wallPoints - 1; i < this.wallPoints; j = i++) {
+      const zi = this.wallZ[base + i], zj = this.wallZ[base + j];
+      const ri = this.wallR[base + i], rj = this.wallR[base + j];
+      if ((zi > Z) !== (zj > Z)) {
+        const cross = ri + ((Z - zi) * (rj - ri)) / (zj - zi);
+        if (R < cross) inside = !inside;
+      }
+    }
+    return !inside;
+  }
+}
+
+const field = new VacuumField(FIELD);
+const derivative = new Float32Array(3);
+
+/* One Runge-Kutta step in the toroidal angle. Returns false where the line leaves
+   the grid or reaches the wall. */
+function step(state, phi, dphi) {
+  const k = [0, 0, 0, 0, 0, 0, 0, 0];
+  let R = state[0], Z = state[1];
+  for (let stage = 0; stage < 4; stage++) {
+    const f = stage === 0 ? 0 : (stage === 3 ? 1 : 0.5);
+    const rr = R + f * dphi * (stage === 0 ? 0 : k[2 * (stage - 1)]);
+    const zz = Z + f * dphi * (stage === 0 ? 0 : k[2 * (stage - 1) + 1]);
+    if (!field.at(rr, phi + f * dphi, zz, derivative)) return false;
+    if (derivative[1] === 0) return false;
+    k[2 * stage] = rr * derivative[0] / derivative[1];
+    k[2 * stage + 1] = rr * derivative[2] / derivative[1];
+  }
+  state[0] = R + (dphi / 6) * (k[0] + 2 * k[2] + 2 * k[4] + k[6]);
+  state[1] = Z + (dphi / 6) * (k[1] + 2 * k[3] + 2 * k[5] + k[7]);
+  return true;
+}
+
+const STEPS_PER_PERIOD = 48;
+const STEPS_PER_TURN = STEPS_PER_PERIOD * field.num_field_periods;
+const DPHI = (2 * Math.PI) / STEPS_PER_TURN;
+
+/* The magnetic axis as the fixed point of the one-turn return map. */
+function findAxis(guessR, guessZ) {
+  let R = guessR, Z = guessZ;
+  const eps = 1e-4;
+  const oneTurn = (r, z) => {
+    const s = [r, z];
+    for (let i = 0; i < STEPS_PER_TURN; i++) if (!step(s, i * DPHI, DPHI)) return null;
+    return s;
+  };
+  for (let iteration = 0; iteration < 30; iteration++) {
+    const a = oneTurn(R, Z), b = oneTurn(R + eps, Z), c = oneTurn(R, Z + eps);
+    if (!a || !b || !c) return null;
+    const f0 = a[0] - R, f1 = a[1] - Z;
+    if (Math.hypot(f0, f1) < 1e-9) break;
+    const j00 = (b[0] - a[0]) / eps - 1, j01 = (c[0] - a[0]) / eps;
+    const j10 = (b[1] - a[1]) / eps, j11 = (c[1] - a[1]) / eps - 1;
+    const det = j00 * j11 - j01 * j10;
+    if (Math.abs(det) < 1e-12) break;
+    R -= 0.5 * (j11 * f0 - j01 * f1) / det;
+    Z -= 0.5 * (-j10 * f0 + j00 * f1) / det;
+  }
+  return [R, Z];
+}
+
+/* ---------- scene -------------------------------------------------------- */
+
+const stage = document.getElementById("stage");
+const renderer = new WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.localClippingEnabled = true;
+stage.appendChild(renderer.domElement);
+
+const scene = new Scene();
+scene.fog = new FogExp2(0x070b10, 0.014);
+const camera = new PerspectiveCamera(40, 1, 0.2, 500);
+scene.add(new AmbientLight(0x93a6c0, 1.2));
+const key = new DirectionalLight(0xfff0dd, 2.0);
+key.position.set(9, 14, 11);
+scene.add(key);
+const rim = new DirectionalLight(0x6fa8ff, 1.15);
+rim.position.set(-11, -7, -6);
+scene.add(rim);
+
+const wedgePlanes = [new Plane(new Vector3(0, 1, 0), 0), new Plane(new Vector3(0, -1, 0), 0)];
+const clipped = [];
+function clipOptions() { return { clippingPlanes: [], clipIntersection: false }; }
+function registerClipped(material) { clipped.push(material); return material; }
+
+const layers = new Map();
+function addLayer(name, object, colour, visible = true) {
+  object.visible = visible;
+  scene.add(object);
+  layers.set(name, { object, colour, visible });
+  return object;
+}
+
+function polyline(points, material) {
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(points, 3));
+  return new Line(geometry, material);
+}
+
+const CIRCUIT_COLOURS = {
+  npc1: 0x4ea3d8, npc2: 0x51b6c6, npc3: 0x59c9a4, npc4: 0x93cc6c, npc5: 0xd0c45c,
+  pca: 0xd38a3a, pcb: 0xc4566b,
+  /* The normally conducting sets, in one family so they read apart from the
+     superconducting coils: trim outside the cryostat, control inside the vessel. */
+  trim_a1: 0x9a7bd0, trim_a2: 0x9a7bd0, trim_a3: 0x9a7bd0, trim_a4: 0x9a7bd0,
+  trim_b1: 0xc09ae8, cc1: 0x3fd3a0, cc2: 0x2fae86,
+};
+
+const coilGroup = new Group();
+const coilMaterials = new Map();
+for (const record of BUNDLE.coils) {
+  if (!coilMaterials.has(record.circuit)) {
+    coilMaterials.set(record.circuit, registerClipped(new LineBasicMaterial({
+      color: CIRCUIT_COLOURS[record.circuit] ?? 0x8899aa,
+      transparent: true, opacity: 0.9, ...clipOptions(),
+    })));
+  }
+  coilGroup.add(polyline(decode(record.points), coilMaterials.get(record.circuit)));
+}
+addLayer("coil filaments", coilGroup, 0x4ea3d8);
+
+/* Flux surfaces are not shipped: they are built from the traced field, so they follow
+   the coil currents rather than standing where one stored equilibrium put them. */
+const surfaceGroup = new Group();
+addLayer("flux surfaces", surfaceGroup, 0xe8542a, false);
+
+const SURFACE_FRACTIONS = [0.35, 0.65, 0.90];
+const SURFACE_TURNS = 48;
+/* Toroidal planes over the whole torus. STEPS_PER_TURN must be a multiple of this, so a
+   plane is reached on an integration step rather than interpolated to. */
+const SURFACE_PLANES = 60;
+/* Poloidal samples the sorted crossings are resampled onto. */
+const SURFACE_POINTS = 32;
+
+const surfaceMaterials = SURFACE_FRACTIONS.map((fraction, index) =>
+  registerClipped(new MeshPhysicalMaterial({
+    color: index === SURFACE_FRACTIONS.length - 1 ? 0xe8542a : 0x2f6fbf,
+    transparent: true,
+    opacity: index === SURFACE_FRACTIONS.length - 1 ? 0.26 : 0.13,
+    roughness: 0.35, metalness: 0.0, side: DoubleSide, depthWrite: false,
+    ...clipOptions(),
+  })));
+
+/* One flux surface from one field line: its crossings of each toroidal plane, ordered by
+   poloidal angle about the co-traced axis and resampled onto a uniform angle grid. A
+   surface fills in over many turns, the transform being irrational, so the number of turns
+   sets how evenly the cross-section is covered. */
+function traceSurface(startR, axisStart) {
+  const stride = STEPS_PER_TURN / SURFACE_PLANES;
+  const s = [startR, axisStart[1]];
+  const a = [axisStart[0], axisStart[1]];
+  const centreR = new Float64Array(SURFACE_PLANES);
+  const centreZ = new Float64Array(SURFACE_PLANES);
+  const buckets = [];
+  for (let p = 0; p < SURFACE_PLANES; p++) buckets.push([]);
+
+  for (let n = 0; n < SURFACE_TURNS * STEPS_PER_TURN; n++) {
+    if (n % stride === 0) {
+      const plane = (n / stride) % SURFACE_PLANES;
+      if (n < STEPS_PER_TURN) { centreR[plane] = a[0]; centreZ[plane] = a[1]; }
+      buckets[plane].push(s[0], s[1]);
+    }
+    const phi = n * DPHI;
+    if (!step(s, phi, DPHI)) return null;
+    if (!step(a, phi, DPHI)) return null;
+  }
+
+  const radius = new Float64Array(SURFACE_PLANES * SURFACE_POINTS);
+  for (let p = 0; p < SURFACE_PLANES; p++) {
+    const bucket = buckets[p];
+    const count = bucket.length / 2;
+    if (count < 8) return null;
+    const angles = new Float64Array(count);
+    const radii = new Float64Array(count);
+    for (let i = 0; i < count; i++) {
+      const dr = bucket[2 * i] - centreR[p];
+      const dz = bucket[2 * i + 1] - centreZ[p];
+      angles[i] = Math.atan2(dz, dr);
+      radii[i] = Math.hypot(dr, dz);
+    }
+    const order = Array.from({ length: count }, (_, i) => i)
+      .sort((x, y) => angles[x] - angles[y]);
+    for (let k = 0; k < SURFACE_POINTS; k++) {
+      const target = -Math.PI + (2 * Math.PI * k) / SURFACE_POINTS;
+      /* Bracket the target angle in the sorted list, wrapping at the branch cut. */
+      let hi = 0;
+      while (hi < count && angles[order[hi]] < target) hi++;
+      const upper = hi % count;
+      const lower = (hi - 1 + count) % count;
+      let a0 = angles[order[lower]], a1 = angles[order[upper]];
+      if (a1 < a0) a1 += 2 * Math.PI;
+      let t = target;
+      if (t < a0) t += 2 * Math.PI;
+      const span = a1 - a0;
+      const weight = span > 1e-12 ? (t - a0) / span : 0;
+      radius[p * SURFACE_POINTS + k] =
+        (1 - weight) * radii[order[lower]] + weight * radii[order[upper]];
+    }
+  }
+  return { centreR, centreZ, radius };
+}
+
+/* The tube through those cross-sections, wrapping in both directions. */
+function surfaceMesh(surface, material) {
+  const vertices = new Float32Array(SURFACE_PLANES * SURFACE_POINTS * 3);
+  for (let p = 0; p < SURFACE_PLANES; p++) {
+    const phi = (2 * Math.PI * p) / SURFACE_PLANES;
+    const cos = Math.cos(phi), sin = Math.sin(phi);
+    for (let k = 0; k < SURFACE_POINTS; k++) {
+      const theta = -Math.PI + (2 * Math.PI * k) / SURFACE_POINTS;
+      const rad = surface.radius[p * SURFACE_POINTS + k];
+      const R = surface.centreR[p] + rad * Math.cos(theta);
+      const Z = surface.centreZ[p] + rad * Math.sin(theta);
+      const at = 3 * (p * SURFACE_POINTS + k);
+      vertices[at] = R * cos;
+      vertices[at + 1] = R * sin;
+      vertices[at + 2] = Z;
+    }
+  }
+  const triangles = new Uint32Array(SURFACE_PLANES * SURFACE_POINTS * 6);
+  let at = 0;
+  for (let p = 0; p < SURFACE_PLANES; p++) {
+    const next = (p + 1) % SURFACE_PLANES;
+    for (let k = 0; k < SURFACE_POINTS; k++) {
+      const kk = (k + 1) % SURFACE_POINTS;
+      const a = p * SURFACE_POINTS + k;
+      const b = next * SURFACE_POINTS + k;
+      const c = next * SURFACE_POINTS + kk;
+      const d = p * SURFACE_POINTS + kk;
+      triangles[at++] = a; triangles[at++] = b; triangles[at++] = c;
+      triangles[at++] = a; triangles[at++] = c; triangles[at++] = d;
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(vertices, 3));
+  geometry.setIndex(new BufferAttribute(triangles, 1));
+  geometry.computeVertexNormals();
+  return new Mesh(geometry, material);
+}
+
+const vesselMaterial = registerClipped(new MeshStandardMaterial({
+  color: 0x8393a5, transparent: true, opacity: 0.075, roughness: 0.85,
+  side: BackSide, depthWrite: false, ...clipOptions(),
+}));
+const vesselMesh = new Mesh(meshGeometry(BUNDLE.vessel), vesselMaterial);
+vesselMesh.renderOrder = 1;
+addLayer("plasma vessel", vesselMesh, 0x8393a5);
+
+const componentGroup = new Group();
+const divertorMaterial = registerClipped(new MeshStandardMaterial({
+  color: 0xc98a44, roughness: 0.5, metalness: 0.12, side: DoubleSide, ...clipOptions(),
+}));
+const otherMaterial = registerClipped(new MeshStandardMaterial({
+  color: 0x5f7182, roughness: 0.78, metalness: 0.05, side: DoubleSide, ...clipOptions(),
+}));
+const unitMaterial = registerClipped(new MeshStandardMaterial({
+  color: 0x3fd3a0, roughness: 0.42, metalness: 0.16, side: DoubleSide,
+  emissive: 0x0c3b2c, ...clipOptions(),
+}));
+for (const record of BUNDLE.components) {
+  const isDivertor = record.name.startsWith("divertor");
+  const picked = isDivertor && record.module === 1 && record.unit === "upper";
+  componentGroup.add(new Mesh(
+    meshGeometry(record),
+    picked ? unitMaterial : (isDivertor ? divertorMaterial : otherMaterial),
+  ));
+}
+addLayer("divertor and baffles", componentGroup, 0xc98a44);
+
+/* Live field lines and the strikes they produce. */
+const traceGroup = new Group();
+addLayer("field lines", traceGroup, 0x49c2c8);
+
+const strikeGeometry = new BufferGeometry();
+strikeGeometry.setAttribute("position", new BufferAttribute(new Float32Array(3), 3));
+strikeGeometry.setAttribute("color", new BufferAttribute(new Float32Array(3), 3));
+const strikeCloud = new Points(strikeGeometry, registerClipped(new PointsMaterial({
+  size: 0.11, vertexColors: true, sizeAttenuation: true, ...clipOptions(),
+})));
+addLayer("strike points", strikeCloud, 0xd38a3a);
+
+/* ---------- the trace, stepped inside the frame loop --------------------- */
+
+const NUM_LINES = 22;
+const TURNS = 42;
+const LAYER = [0.06, 1.30];
+const FRAME_BUDGET_MS = 9;
+
+const rampColour = (t) => new Color().setHSL(0.13 - 0.13 * t, 0.92, 0.42 + 0.16 * t);
+
+const trace = {
+  running: false, line: 0, axis: null, halfWidth: 0,
+  strikes: [], lengths: [], iotaSamples: [],
+};
+
+/* Field lines first, then one traced flux surface per fraction. */
+const TRACE_STEPS = NUM_LINES + SURFACE_FRACTIONS.length;
+
+function resetTrace() {
+  traceGroup.clear();
+  surfaceGroup.clear();
+  trace.running = true;
+  trace.line = 0;
+  trace.strikes = [];
+  trace.lengths = [];
+  trace.iotaSamples = [];
+  const found = findAxis(5.93, 0.0);
+  trace.axis = found;
+  trace.halfWidth = found ? (field.r_max - 0.15) - found[0] : 0;
+  setLive("axis", found ? found[0].toFixed(4) + " m" : "not found");
+}
+
+/* One field line, traced to the wall or to the turn limit, returned as a polyline
+   plus the winding angle it accumulated about the co-traced axis. */
+function traceLine(startR) {
+  const s = [startR, trace.axis[1]];
+  const a = [trace.axis[0], trace.axis[1]];
+  const points = [];
+  let winding = 0;
+  let previous = Math.atan2(s[1] - a[1], s[0] - a[0]);
+  let arc = 0;
+  let struck = null;
+  let turns = 0;
+
+  for (let n = 0; n < TURNS * STEPS_PER_TURN; n++) {
+    const phi = n * DPHI;
+    if (n % 3 === 0) {
+      points.push(s[0] * Math.cos(phi), s[0] * Math.sin(phi), s[1]);
+    }
+    if (!field.at(s[0], phi, s[1], derivative)) break;
+    const speed = s[0] * Math.hypot(derivative[0], derivative[1], derivative[2])
+      / Math.abs(derivative[1]);
+    arc += speed * DPHI;
+    if (!step(s, phi, DPHI)) break;
+    if (!step(a, phi, DPHI)) break;
+    const angle = Math.atan2(s[1] - a[1], s[0] - a[0]);
+    let delta = angle - previous;
+    if (delta > Math.PI) delta -= 2 * Math.PI;
+    if (delta < -Math.PI) delta += 2 * Math.PI;
+    winding += delta;
+    previous = angle;
+    turns = (n + 1) / STEPS_PER_TURN;
+    if (n % 8 === 0 && field.outsideWall(s[0], phi + DPHI, s[1])) {
+      struck = [s[0], phi + DPHI, s[1], arc];
+      break;
+    }
+  }
+  return {
+    points: new Float32Array(points),
+    iota: turns > 0.5 ? Math.abs(winding) / (2 * Math.PI * turns) : NaN,
+    struck,
+  };
+}
+
+function advanceTrace() {
+  if (!trace.running || !trace.axis) return;
+  const started = performance.now();
+  while (trace.line < TRACE_STEPS && performance.now() - started < FRAME_BUDGET_MS) {
+    if (trace.line < NUM_LINES) {
+      const t = trace.line / (NUM_LINES - 1);
+      const startR =
+        trace.axis[0] + (LAYER[0] + (LAYER[1] - LAYER[0]) * t) * trace.halfWidth;
+      const result = traceLine(startR);
+      if (result.points.length >= 6) {
+        traceGroup.add(polyline(result.points, registerClipped(new LineBasicMaterial({
+          color: new Color().setHSL(0.55 - 0.42 * t, 0.75, 0.58),
+          transparent: true, opacity: 0.85, ...clipOptions(),
+        }))));
+      }
+      if (Number.isFinite(result.iota)) trace.iotaSamples.push([t, result.iota]);
+      if (result.struck) {
+        trace.strikes.push(result.struck);
+        trace.lengths.push(result.struck[3]);
+      }
+    } else {
+      const index = trace.line - NUM_LINES;
+      const surface = traceSurface(
+        trace.axis[0] + SURFACE_FRACTIONS[index] * trace.halfWidth, trace.axis,
+      );
+      if (surface) {
+        const mesh = surfaceMesh(surface, surfaceMaterials[index]);
+        mesh.renderOrder = 3 + index;
+        surfaceGroup.add(mesh);
+      }
+    }
+    trace.line++;
+    document.querySelector("#progress > i").style.width =
+      (100 * trace.line / TRACE_STEPS).toFixed(0) + "%";
+  }
+  if (trace.line >= TRACE_STEPS) {
+    trace.running = false;
+    finishTrace();
+  }
+}
+
+function finishTrace() {
+  const positions = new Float32Array(Math.max(1, trace.strikes.length) * 3);
+  const colours = new Float32Array(positions.length);
+  let longest = 1, shortest = Infinity;
+  for (const value of trace.lengths) {
+    if (value > longest) longest = value;
+    if (value < shortest) shortest = value;
+  }
+  if (!Number.isFinite(shortest)) shortest = 1;
+  const span = Math.log10(longest / Math.max(shortest, 0.1)) || 1;
+  trace.strikes.forEach((s, i) => {
+    positions[3 * i] = s[0] * Math.cos(s[1]);
+    positions[3 * i + 1] = s[0] * Math.sin(s[1]);
+    positions[3 * i + 2] = s[2];
+    const c = rampColour(Math.min(1, Math.max(0,
+      Math.log10(Math.max(s[3], shortest) / Math.max(shortest, 0.1)) / span)));
+    colours[3 * i] = c.r; colours[3 * i + 1] = c.g; colours[3 * i + 2] = c.b;
+  });
+  strikeGeometry.setAttribute("position", new BufferAttribute(positions, 3));
+  strikeGeometry.setAttribute("color", new BufferAttribute(colours, 3));
+  strikeGeometry.setDrawRange(0, trace.strikes.length);
+  strikeGeometry.attributes.position.needsUpdate = true;
+
+  const samples = trace.iotaSamples;
+  const edge = samples.length ? samples[samples.length - 1][1] : NaN;
+  setLive("iota", samples.length ? samples[0][1].toFixed(4) + " → " + edge.toFixed(4) : "—");
+  setLive("strikes", trace.strikes.length + " of " + NUM_LINES);
+  setLive("length", trace.lengths.length
+    ? shortest.toFixed(1) + " – " + longest.toFixed(0) + " m" : "—");
+  document.getElementById("ramp-lo").textContent = shortest.toFixed(1) + " m";
+  document.getElementById("ramp-hi").textContent = longest.toFixed(0) + " m";
+  document.querySelector("#progress > i").style.width = "0%";
+  drawIota();
+  updateSound(edge);
+}
+
+/* ---------- rail --------------------------------------------------------- */
+
+document.getElementById("config-label").textContent = BUNDLE.configuration.label;
+document.getElementById("geometry-version").textContent = "geometry " + BUNDLE.geometry.geometry;
+
+const liveRows = [
+  ["axis", "Magnetic axis"], ["iota", "ι axis → edge"],
+  ["strikes", "Lines to the wall"], ["length", "Connection length"],
+];
+document.getElementById("live").innerHTML = liveRows
+  .map(([id, name]) => `<tr><td class="live">${name}</td><td id="live-${id}">—</td></tr>`).join("");
+function setLive(id, value) {
+  const cell = document.getElementById("live-" + id);
+  if (cell) cell.textContent = value;
+}
+
+/* ---------- sound: two tones at the traced ratio ------------------------- */
+
+const sound = { context: null, axis: null, edge: null, gain: null };
+function updateSound(iotaEdge) {
+  if (!sound.context || !trace.axis) return;
+  if (!(Number.isFinite(iotaEdge) && iotaEdge > 0)) return;
+  if (!field.at(trace.axis[0], 0.0, trace.axis[1], derivative)) return;
+  const magnitude = Math.hypot(derivative[0], derivative[1], derivative[2]);
+  /* 2.5 T on the axis lands the base at 165 Hz; the second tone carries the
+     transform, so the ratio is the field's own. */
+  const base = 66.0 * magnitude;
+  const when = sound.context.currentTime;
+  sound.axis.frequency.setTargetAtTime(base, when, 0.35);
+  sound.edge.frequency.setTargetAtTime(base * iotaEdge, when, 0.35);
+}
+document.getElementById("sound-on").addEventListener("change", (event) => {
+  if (event.target.checked) {
+    if (!sound.context) {
+      sound.context = new AudioContext();
+      sound.gain = sound.context.createGain();
+      sound.gain.gain.value = 0.0;
+      sound.gain.connect(sound.context.destination);
+      for (const key of ["axis", "edge"]) {
+        const oscillator = sound.context.createOscillator();
+        oscillator.type = "sine";
+        oscillator.frequency.value = 165.0;
+        oscillator.connect(sound.gain);
+        oscillator.start();
+        sound[key] = oscillator;
+      }
+    }
+    sound.context.resume();
+    sound.gain.gain.setTargetAtTime(0.05, sound.context.currentTime, 0.4);
+    const samples = trace.iotaSamples;
+    updateSound(samples.length ? samples[samples.length - 1][1] : NaN);
+  } else if (sound.context) {
+    sound.gain.gain.setTargetAtTime(0.0, sound.context.currentTime, 0.15);
+  }
+});
+
+const facts = [
+  ["Major radius", BUNDLE.configuration.major_radius.toFixed(4) + " m"],
+  ["Minor radius", BUNDLE.configuration.minor_radius.toFixed(4) + " m"],
+  ["Plasma volume", BUNDLE.configuration.volume.toFixed(2) + " m³"],
+  ["Coil filaments", BUNDLE.coils.length],
+  ["Component instances", BUNDLE.components.length],
+  ["Field grid", FIELD.grid.num_r + "×" + FIELD.grid.num_z + "×" + FIELD.grid.num_phi],
+  ["Axis against the model", "0.05 mm"],
+  ["Strike points against it", "134 mm"],
+];
+document.getElementById("facts").innerHTML = facts
+  .map(([name, value]) => `<tr><td>${name}</td><td>${value}</td></tr>`).join("");
+
+/* The readout: the verification record, each number beside its band and the command
+   that produced it. */
+const READOUT = {{READOUT_JSON}};
+function readNumber(value) {
+  const magnitude = Math.abs(value);
+  if (value === 0) return "0";
+  if (magnitude >= 1e4 || magnitude < 1e-3) return value.toExponential(1);
+  const digits = magnitude >= 100 ? 1 : magnitude >= 10 ? 2 : 3;
+  return value.toFixed(digits).replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+}
+const readoutRows = [];
+let readoutSection = "";
+for (const row of READOUT.rows) {
+  if (row.section !== readoutSection) {
+    readoutSection = row.section;
+    readoutRows.push(`<tr><td class="section" colspan="2">${row.section}</td></tr>`);
+  }
+  const unit = row.unit ? ` ${row.unit}` : "";
+  readoutRows.push(
+    `<tr><td>${row.quantity}</td><td${row.agrees ? "" : ' class="off"'}>` +
+    `${readNumber(row.value)}${unit}</td></tr>`,
+    `<tr><td class="meta" colspan="2">${readNumber(row.low)} to ` +
+    `${readNumber(row.high)}${unit} · w7x_twin ${row.command}</td></tr>`,
+  );
+}
+document.getElementById("readout").innerHTML = readoutRows.join("");
+document.getElementById("readout-count").textContent =
+  `${READOUT.agreed} of ${READOUT.total} inside their bands`;
+
+const RANGES = {
+  npc1: [8000, 16000], npc2: [8000, 16000], npc3: [8000, 16000],
+  npc4: [8000, 16000], npc5: [8000, 16000], pca: [-9000, 9000], pcb: [-9000, 9000],
+};
+const currents = FIELD.presets[0].currents.slice();
+const sliders = [];
+const circuitHost = document.getElementById("circuits");
+FIELD.circuits.forEach((name, index) => {
+  const row = document.createElement("div");
+  row.className = "circuit";
+  const label = document.createElement("span");
+  label.textContent = name;
+  const slider = document.createElement("input");
+  const range = RANGES[name] ?? [-9000, 16000];
+  Object.assign(slider, { type: "range", min: range[0], max: range[1], step: 50 });
+  slider.value = currents[index] ?? 0;
+  slider.setAttribute("aria-label", name + " current per turn");
+  const readout = document.createElement("span");
+  readout.textContent = Math.round(currents[index] ?? 0);
+  slider.addEventListener("input", () => {
+    currents[index] = Number(slider.value);
+    readout.textContent = Math.round(currents[index]);
+    for (const button of presetButtons) button.setAttribute("aria-pressed", "false");
+    scheduleRetrace();
+  });
+  row.append(label, slider, readout);
+  circuitHost.appendChild(row);
+  sliders.push({ slider, readout });
+});
+
+const presetButtons = [];
+const presetHost = document.getElementById("presets");
+FIELD.presets.forEach((preset, index) => {
+  const button = document.createElement("button");
+  button.textContent = preset.label.replace(/\s*\(.*\)/, "");
+  button.setAttribute("aria-pressed", index === 0 ? "true" : "false");
+  button.addEventListener("click", () => {
+    preset.currents.forEach((value, i) => {
+      currents[i] = value;
+      sliders[i].slider.value = value;
+      sliders[i].readout.textContent = Math.round(value);
+    });
+    for (const other of presetButtons) other.setAttribute("aria-pressed", "false");
+    button.setAttribute("aria-pressed", "true");
+    document.getElementById("config-label").textContent = preset.label;
+    scheduleRetrace();
+  });
+  presetHost.appendChild(button);
+  presetButtons.push(button);
+});
+
+/* The trim and control circuits, each slider spanning its own current rating. */
+const auxCurrents = field.aux ? field.aux.circuits.map(() => 0) : [];
+if (field.aux) {
+  document.getElementById("auxiliary-group").hidden = false;
+  const host = document.getElementById("auxiliary");
+  field.aux.circuits.forEach((entry, index) => {
+    const row = document.createElement("div");
+    row.className = "circuit";
+    const label = document.createElement("span");
+    label.textContent = entry.name.replace("trim_", "");
+    const slider = document.createElement("input");
+    Object.assign(slider, {
+      type: "range", min: -entry.limit, max: entry.limit, step: 25, value: 0,
+    });
+    slider.setAttribute("aria-label", entry.name + " current per turn");
+    const readout = document.createElement("span");
+    readout.textContent = "0";
+    slider.addEventListener("input", () => {
+      auxCurrents[index] = Number(slider.value);
+      readout.textContent = Math.round(auxCurrents[index]);
+      scheduleRetrace();
+    });
+    row.append(label, slider, readout);
+    host.appendChild(row);
+  });
+  document.getElementById("auxiliary-note").textContent =
+    "Tabulated over the whole torus on a " + field.aux.num_r + "×" + field.aux.num_z + "×"
+    + field.aux.num_phi + " grid, from " + field.aux.blocks.length + " stored windings. The "
+    + "geometry is an engineering reconstruction; its n = 1 amplitude carries 16 %.";
+}
+
+const betaSlider = document.getElementById("beta");
+const betaLabel = document.getElementById("beta-label");
+document.getElementById("beta-note").textContent = field.plasma
+  ? "The plasma-current field, integrated over the equilibrium's own current density at "
+    + "⟨β⟩ = " + (100 * field.plasma.betaReference).toFixed(2) + " % and scaled from there."
+  : "This bundle carries no plasma-current field; the trace is the coil field alone.";
+if (!field.plasma) betaSlider.disabled = true;
+
+function currentBeta() {
+  return field.plasma ? Number(betaSlider.value) / 100 : 0;
+}
+
+let retraceTimer = 0;
+function scheduleRetrace() {
+  clearTimeout(retraceTimer);
+  retraceTimer = setTimeout(() => {
+    field.setCurrents(currents, currentBeta(), auxCurrents);
+    resetTrace();
+  }, 140);
+}
+
+betaSlider.addEventListener("input", () => {
+  betaLabel.textContent = "⟨β⟩ " + Number(betaSlider.value).toFixed(2) + " %";
+  scheduleRetrace();
+});
+
+const layerHost = document.getElementById("layers");
+for (const [name, entry] of layers) {
+  const label = document.createElement("label");
+  const box = document.createElement("input");
+  box.type = "checkbox";
+  box.checked = entry.visible;
+  box.addEventListener("change", () => { entry.object.visible = box.checked; });
+  const swatch = document.createElement("span");
+  swatch.className = "swatch";
+  swatch.style.background = "#" + entry.colour.toString(16).padStart(6, "0");
+  label.append(box, swatch, document.createTextNode(name));
+  layerHost.appendChild(label);
+}
+
+const ramp = document.getElementById("ramp");
+const stops = [];
+for (let i = 0; i <= 8; i++) stops.push("#" + rampColour(i / 8).getHexString());
+ramp.style.background = "linear-gradient(90deg," + stops.join(",") + ")";
+
+/* The traced transform against the island chains it can meet. */
+const iotaCanvas = document.getElementById("iota");
+const RESONANCES = [["5/6", 5 / 6], ["5/5", 1.0], ["5/4", 1.25]];
+
+function drawIota() {
+  const context = iotaCanvas.getContext("2d");
+  const width = iotaCanvas.width, height = iotaCanvas.height;
+  const pad = { left: 6, right: 44, top: 12, bottom: 16 };
+  context.clearRect(0, 0, width, height);
+  const samples = trace.iotaSamples.filter(([, v]) => Number.isFinite(v));
+  if (samples.length < 2) return;
+
+  const values = samples.map(([, v]) => v).concat(RESONANCES.map((r) => r[1]));
+  const low = Math.min(...values) - 0.03, high = Math.max(...values) + 0.03;
+  const x = (t) => pad.left + t * (width - pad.left - pad.right);
+  const y = (v) => height - pad.bottom - ((v - low) / (high - low)) * (height - pad.top - pad.bottom);
+
+  context.font = '500 17px "IBM Plex Mono", monospace';
+  context.textBaseline = "middle";
+  const lo = Math.min(...samples.map(([, v]) => v));
+  const hi = Math.max(...samples.map(([, v]) => v));
+  for (const [label, value] of RESONANCES) {
+    const crossed = value >= lo && value <= hi;
+    context.strokeStyle = crossed ? token("--copper") : token("--rule");
+    context.setLineDash(crossed ? [] : [3, 4]);
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(pad.left, y(value));
+    context.lineTo(width - pad.right, y(value));
+    context.stroke();
+    context.fillStyle = crossed ? token("--copper") : token("--ink-faint");
+    context.fillText(label, width - pad.right + 7, y(value));
+  }
+  context.setLineDash([]);
+  context.strokeStyle = token("--plasma");
+  context.lineWidth = 2.5;
+  context.beginPath();
+  samples.forEach(([t, v], i) => {
+    if (i === 0) context.moveTo(x(t), y(v)); else context.lineTo(x(t), y(v));
+  });
+  context.stroke();
+  context.fillStyle = token("--ink-faint");
+  context.font = '500 15px "IBM Plex Mono", monospace';
+  context.fillText("axis", pad.left, height - 7);
+  context.fillText("edge", width - pad.right - 30, height - 7);
+  document.getElementById("iota-note").textContent =
+    "Traced from the field these currents produce, by the winding angle about the "
+    + "co-traced axis.";
+}
+
+/* ---------- cutaway ------------------------------------------------------- */
+
+const wedgeToggle = document.getElementById("wedge-on");
+const wedgeSlider = document.getElementById("wedge");
+const wedgeLabel = document.getElementById("wedge-label");
+
+function updateWedge() {
+  const degrees = Number(wedgeSlider.value);
+  wedgeLabel.textContent = degrees + "°";
+  const half = MathUtils.degToRad(degrees) / 2;
+  wedgePlanes[0].normal.set(-Math.sin(half), Math.cos(half), 0).normalize();
+  wedgePlanes[1].normal.set(-Math.sin(half), -Math.cos(half), 0).normalize();
+  wedgePlanes[0].constant = 0;
+  wedgePlanes[1].constant = 0;
+  const planes = wedgeToggle.checked ? wedgePlanes : [];
+  for (const material of clipped) {
+    material.clippingPlanes = planes;
+    material.needsUpdate = true;
+  }
+}
+wedgeToggle.addEventListener("change", updateWedge);
+wedgeSlider.addEventListener("input", updateWedge);
+
+/* ---------- theme ---------------------------------------------------------- */
+
+function applyTheme() {
+  const ground = new Color(token("--ground"));
+  scene.background = ground;
+  scene.fog.color = ground;
+  const light = ground.getHSL({}).l > 0.5;
+  vesselMaterial.opacity = light ? 0.15 : 0.075;
+  vesselMaterial.side = light ? DoubleSide : BackSide;
+  vesselMaterial.needsUpdate = true;
+  otherMaterial.color.set(light ? 0x8595a5 : 0x5f7182);
+  drawIota();
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, {
+  attributes: true, attributeFilter: ["data-theme"],
+});
+
+/* ---------- camera ---------------------------------------------------------- */
+
+/* The torus is centred on the origin, so framing it means fitting its bounding
+   sphere to the part of the canvas the rail does not cover. */
+const bounds = new Box3();
+scene.traverse((object) => {
+  if (object.isLine || object.isMesh) {
+    object.geometry.computeBoundingBox();
+    bounds.union(object.geometry.boundingBox);
+  }
+});
+const sphere = bounds.getBoundingSphere(new Sphere());
+const target = sphere.center.clone();
+const spherical = new Spherical(sphere.radius * 2.4, 0.95, 0.7);
+let dragging = null;
+const previous = { x: 0, y: 0 };
+
+function railWidth() {
+  const rail = document.getElementById("rail");
+  return innerWidth > 780 ? rail.offsetWidth : 0;
+}
+
+function frame() {
+  const usableWidth = Math.max(120, innerWidth - railWidth());
+  const vertical = MathUtils.degToRad(camera.fov) / 2;
+  const horizontal = Math.atan(Math.tan(vertical) * (usableWidth / innerHeight));
+  const limiting = Math.min(vertical, horizontal);
+  spherical.radius = (sphere.radius * 1.12) / Math.sin(limiting);
+  place();
+}
+
+function place() {
+  spherical.phi = MathUtils.clamp(spherical.phi, 0.05, Math.PI - 0.05);
+  spherical.radius = MathUtils.clamp(spherical.radius, sphere.radius * 0.25, sphere.radius * 12);
+  camera.position.setFromSpherical(spherical).add(target);
+  camera.lookAt(target);
+}
+
+const surface = renderer.domElement;
+surface.addEventListener("pointerdown", (event) => {
+  dragging = (event.button === 2 || event.shiftKey) ? "pan" : "orbit";
+  previous.x = event.clientX; previous.y = event.clientY;
+  surface.setPointerCapture(event.pointerId);
+});
+surface.addEventListener("pointerup", (event) => {
+  dragging = null;
+  surface.releasePointerCapture(event.pointerId);
+});
+surface.addEventListener("pointermove", (event) => {
+  if (!dragging) return;
+  const dx = event.clientX - previous.x, dy = event.clientY - previous.y;
+  previous.x = event.clientX; previous.y = event.clientY;
+  if (dragging === "orbit") {
+    spherical.theta -= dx * 0.005;
+    spherical.phi -= dy * 0.005;
+  } else {
+    const scale = spherical.radius * 0.0016;
+    target.add(new Vector3().setFromMatrixColumn(camera.matrix, 0).multiplyScalar(-dx * scale));
+    target.add(new Vector3().setFromMatrixColumn(camera.matrix, 1).multiplyScalar(dy * scale));
+  }
+  place();
+});
+surface.addEventListener("wheel", (event) => {
+  event.preventDefault();
+  spherical.radius *= Math.exp(event.deltaY * 0.0009);
+  place();
+}, { passive: false });
+surface.addEventListener("contextmenu", (event) => event.preventDefault());
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  /* Shift the projection centre into the free half of the canvas so the machine is
+     centred in what the viewer can see, not behind the rail. */
+  const shift = railWidth() / 2;
+  if (shift > 0) camera.setViewOffset(innerWidth, innerHeight, -shift, 0, innerWidth, innerHeight);
+  else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+addEventListener("resize", () => { resize(); frame(); });
+
+let spinning = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+addEventListener("keydown", (event) => {
+  if (event.key === " ") { spinning = !spinning; event.preventDefault(); }
+  if (event.key === "f" || event.key === "F") frame();
+});
+
+resize();
+applyTheme();
+updateWedge();
+field.setCurrents(currents, currentBeta(), auxCurrents);
+resetTrace();
+frame();
+document.getElementById("loading").remove();
+document.getElementById("rail").hidden = false;
+resize();
+frame();
+
+renderer.setAnimationLoop(() => {
+  advanceTrace();
+  if (spinning && !dragging) {
+    spherical.theta += 0.0009;
+    place();
+  }
+  renderer.render(scene, camera);
+});
+</script>

@@ -1,0 +1,205 @@
+{
+  "geometry": {
+    "geometry": "c6a51d4a7d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "configuration": "op12a_22ka_mimic",
+  "resonance": [
+    5,
+    6
+  ],
+  "resonant_s": 0.3068487878077811,
+  "mpol": 6,
+  "ntor": 2,
+  "radial_resolution": 8,
+  "cases": [
+    {
+      "volumes": 4,
+      "placement": "on the resonance",
+      "interfaces": [
+        0.306849,
+        0.500135,
+        0.773306
+      ],
+      "force_residual": 0.0003523391631268218,
+      "restarts": 4,
+      "island_mm": 14.494883043600082,
+      "seconds": 123.34463129215874
+    },
+    {
+      "volumes": 4,
+      "placement": "bracketing it",
+      "interfaces": [
+        0.213029,
+        0.392653,
+        0.654994
+      ],
+      "force_residual": 1.6742988084268578e-15,
+      "restarts": 1,
+      "island_mm": 27.22178460920133,
+      "seconds": 37.65484173409641
+    },
+    {
+      "volumes": 6,
+      "placement": "on the resonance",
+      "interfaces": [
+        0.306849,
+        0.388385,
+        0.603436,
+        0.752054,
+        0.870701
+      ],
+      "force_residual": 0.0005904499559656308,
+      "restarts": 4,
+      "island_mm": 17.661779545090738,
+      "seconds": 232.2180535083171
+    },
+    {
+      "volumes": 6,
+      "placement": "bracketing it",
+      "interfaces": [
+        0.213029,
+        0.392653,
+        0.471546,
+        0.654994,
+        0.855329
+      ],
+      "force_residual": 0.0008945934411985195,
+      "restarts": 2,
+      "island_mm": 3.0388194931508794,
+      "seconds": 132.04817434214056
+    },
+    {
+      "volumes": 8,
+      "placement": "on the resonance",
+      "interfaces": [
+        0.306849,
+        0.381506,
+        0.45821,
+        0.603436,
+        0.684825,
+        0.807875,
+        0.895963
+      ],
+      "force_residual": 0.00048657553115769974,
+      "restarts": 2,
+      "island_mm": 14.456709678335343,
+      "seconds": 155.78960500797257
+    },
+    {
+      "volumes": 8,
+      "placement": "bracketing it",
+      "interfaces": [
+        0.213029,
+        0.392653,
+        0.45821,
+        0.603436,
+        0.656486,
+        0.773306,
+        0.894611
+      ],
+      "force_residual": 8.757881945828245e-05,
+      "restarts": 2,
+      "island_mm": 23.69723189416434,
+      "seconds": 152.89402154879645
+    },
+    {
+      "volumes": 12,
+      "placement": "on the resonance",
+      "interfaces": [
+        0.216609,
+        0.306849,
+        0.381506,
+        0.45821,
+        0.503126,
+        0.60858,
+        0.684664,
+        0.755811,
+        0.807875,
+        0.884588,
+        0.943257
+      ],
+      "force_residual": 0.0002650014401804076,
+      "restarts": 3,
+      "island_mm": 6.587488933416208,
+      "seconds": 354.4434225191362
+    },
+    {
+      "volumes": 12,
+      "placement": "bracketing it",
+      "interfaces": [
+        0.055561,
+        0.213029,
+        0.392653,
+        0.45821,
+        0.497039,
+        0.603436,
+        0.654994,
+        0.752054,
+        0.8028,
+        0.870701,
+        0.937668
+      ],
+      "force_residual": 0.0005776204601896706,
+      "restarts": 4,
+      "island_mm": 2.8894224629050225,
+      "seconds": 390.6353133840021
+    },
+    {
+      "volumes": 16,
+      "placement": "on the resonance",
+      "interfaces": [
+        0.216609,
+        0.306849,
+        0.381506,
+        0.411439,
+        0.45821,
+        0.500135,
+        0.603436,
+        0.630246,
+        0.675431,
+        0.752054,
+        0.787361,
+        0.855329,
+        0.880925,
+        0.931496,
+        0.958621
+      ],
+      "force_residual": 0.0005032329824041962,
+      "restarts": 2,
+      "island_mm": 4.678704817711321,
+      "seconds": 396.5959164761007
+    },
+    {
+      "volumes": 16,
+      "placement": "bracketing it",
+      "interfaces": [
+        0.173081,
+        0.213029,
+        0.392653,
+        0.422475,
+        0.45821,
+        0.488805,
+        0.603436,
+        0.630246,
+        0.656486,
+        0.684825,
+        0.760704,
+        0.807875,
+        0.862752,
+        0.895963,
+        0.95562
+      ],
+      "force_residual": 0.0006460288775928791,
+      "restarts": 4,
+      "island_mm": 8.968195958136027,
+      "seconds": 461.9429659578018
+    }
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "geometry": {
+    "geometry": "381cf00c8d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "accf49ac0e12"
+  },
+  "configuration": "standard",
+  "module": 1,
+  "filaments": 14,
+  "published_b11": 5e-05,
+  "published_source": "Compensation of 1/1 and 2/2 error field in Wendelstein 7-X via divertor heat load symmetrization, Nucl. Fusion, doi:10.1088/1741-4326/ae738e, approximately 0.5e-4 for both b11 and b22",
+  "measured_phase_11_degrees": -18.0,
+  "measured_phase_22_degrees": 54.0,
+  "scan": [
+    {
+      "deviation": "radial shift",
+      "amplitude": 0.002,
+      "b11": 2.4458789849973016e-05,
+      "b22": 1.2150875007539134e-05,
+      "ratio": 0.49678970554434604,
+      "phase_11_degrees": 125.99999999999083,
+      "phase_22_degrees": -18.000000000025313
+    },
+    {
+      "deviation": "radial shift",
+      "amplitude": 0.005,
+      "b11": 6.129602564363297e-05,
+      "b22": 3.0465015876293218e-05,
+      "ratio": 0.4970145381596649,
+      "phase_11_degrees": 126.00000000000315,
+      "phase_22_degrees": -18.000000000021394
+    },
+    {
+      "deviation": "radial shift",
+      "amplitude": 0.01,
+      "b11": 0.0001230882185977391,
+      "b22": 6.122409010573624e-05,
+      "ratio": 0.4974000826660823,
+      "phase_11_degrees": 125.99999999999761,
+      "phase_22_degrees": -18.000000000027665
+    },
+    {
+      "deviation": "radial shift",
+      "amplitude": 0.02,
+      "b11": 0.0002481560771892143,
+      "b22": 0.00012363421425947097,
+      "ratio": 0.4982115113191535,
+      "phase_11_degrees": 125.99999999999858,
+      "phase_22_degrees": -18.000000000024396
+    },
+    {
+      "deviation": "vertical shift",
+      "amplitude": 0.002,
+      "b11": 8.270271340171376e-06,
+      "b22": 4.229979577765812e-05,
+      "ratio": 5.114680527130273,
+      "phase_11_degrees": -143.6782534460983,
+      "phase_22_degrees": 72.06798284594579
+    },
+    {
+      "deviation": "vertical shift",
+      "amplitude": 0.005,
+      "b11": 2.0677170465362866e-05,
+      "b22": 0.00010574962446497512,
+      "ratio": 5.114317969285035,
+      "phase_11_degrees": -143.19566954534872,
+      "phase_22_degrees": 72.16995790234307
+    },
+    {
+      "deviation": "vertical shift",
+      "amplitude": 0.01,
+      "b11": 4.136499716548905e-05,
+      "b22": 0.00021150021364139298,
+      "ratio": 5.1130237672988,
+      "phase_11_degrees": -142.39159563404002,
+      "phase_22_degrees": 72.33992142914758
+    },
+    {
+      "deviation": "vertical shift",
+      "amplitude": 0.02,
+      "b11": 8.281519024492178e-05,
+      "b22": 0.0004230081536282468,
+      "ratio": 5.107857053485252,
+      "phase_11_degrees": -140.78524048679944,
+      "phase_22_degrees": 72.67988784290938
+    },
+    {
+      "deviation": "toroidal shift",
+      "amplitude": 0.002,
+      "b11": 1.5732717199979325e-05,
+      "b22": 2.4854448140392584e-06,
+      "ratio": 0.15797937396615283,
+      "phase_11_degrees": 36.024210972218974,
+      "phase_22_degrees": -107.38081600347584
+    },
+    {
+      "deviation": "toroidal shift",
+      "amplitude": 0.005,
+      "b11": 3.9331810403855805e-05,
+      "b22": 6.215610246305165e-06,
+      "ratio": 0.15803010800885564,
+      "phase_11_degrees": 36.06052802375797,
+      "phase_22_degrees": -106.45237654832769
+    },
+    {
+      "deviation": "toroidal shift",
+      "amplitude": 0.01,
+      "b11": 7.866374503284254e-05,
+      "b22": 1.2445483136674699e-05,
+      "ratio": 0.15821116998025764,
+      "phase_11_degrees": 36.12106028537621,
+      "phase_22_degrees": -104.90715272642534
+    },
+    {
+      "deviation": "toroidal shift",
+      "amplitude": 0.02,
+      "b11": 0.00015732848112131657,
+      "b22": 2.5004747700405503e-05,
+      "ratio": 0.15893338270471352,
+      "phase_11_degrees": 36.242154491599045,
+      "phase_22_degrees": -101.83337158438493
+    },
+    {
+      "deviation": "tilt about the radial axis",
+      "amplitude": 0.0005,
+      "b11": 4.03373398329593e-05,
+      "b22": 1.3567418727338987e-06,
+      "ratio": 0.03363488713812794,
+      "phase_11_degrees": -54.00000000000157,
+      "phase_22_degrees": -18.000000000080558
+    },
+    {
+      "deviation": "tilt about the radial axis",
+      "amplitude": 0.001,
+      "b11": 8.067153701558158e-05,
+      "b22": 2.713544947261226e-06,
+      "ratio": 0.03363695607704994,
+      "phase_11_degrees": -53.999999999998735,
+      "phase_22_degrees": -18.00000000003757
+    },
+    {
+      "deviation": "tilt about the radial axis",
+      "amplitude": 0.002,
+      "b11": 0.00016133051316460792,
+      "b22": 5.4273381735818955e-06,
+      "ratio": 0.03364111392892119,
+      "phase_11_degrees": -53.999999999999666,
+      "phase_22_degrees": -18.000000000004345
+    },
+    {
+      "deviation": "tilt about the radial axis",
+      "amplitude": 0.005,
+      "b11": 0.0004032322707400295,
+      "b22": 1.3570276677624542e-05,
+      "ratio": 0.033653746642647864,
+      "phase_11_degrees": -54.000000000000085,
+      "phase_22_degrees": -18.000000000001585
+    },
+    {
+      "deviation": "tilt about the vertical axis",
+      "amplitude": 0.0005,
+      "b11": 4.2755010646016674e-05,
+      "b22": 4.060764154897277e-06,
+      "ratio": 0.0949775030701718,
+      "phase_11_degrees": -144.00167453880994,
+      "phase_22_degrees": 71.9738723775736
+    },
+    {
+      "deviation": "tilt about the vertical axis",
+      "amplitude": 0.001,
+      "b11": 8.551002297412865e-05,
+      "b22": 8.121531292404076e-06,
+      "ratio": 0.09497753608207161,
+      "phase_11_degrees": -144.0033490781625,
+      "phase_22_degrees": 71.94774475932033
+    },
+    {
+      "deviation": "tilt about the vertical axis",
+      "amplitude": 0.002,
+      "b11": 0.00017102005940503875,
+      "b22": 1.6243086445655156e-05,
+      "ratio": 0.09497766812947667,
+      "phase_11_degrees": -144.0066981606436,
+      "phase_22_degrees": 71.89548955247132
+    },
+    {
+      "deviation": "tilt about the vertical axis",
+      "amplitude": 0.005,
+      "b11": 0.0004275503840081159,
+      "b22": 4.060813367738117e-05,
+      "ratio": 0.0949785924566269,
+      "phase_11_degrees": -144.01674547722305,
+      "phase_22_degrees": 71.7387244730747
+    }
+  ],
+  "summary": [
+    {
+      "deviation": "radial shift",
+      "amplitude_for_b11": 0.004038536994820439,
+      "b22_over_b11": 0.4972073104128736,
+      "b22_predicted": 2.486036552064368e-05,
+      "b22_against_published": 0.4972073104128736
+    },
+    {
+      "deviation": "tilt about the radial axis",
+      "amplitude_for_b11": 0.0006199627801333806,
+      "b22_over_b11": 0.03363903500298557,
+      "b22_predicted": 1.6819517501492784e-06,
+      "b22_against_published": 0.03363903500298557
+    },
+    {
+      "deviation": "tilt about the vertical axis",
+      "amplitude_for_b11": 0.000584726465237347,
+      "b22_over_b11": 0.09497760210577413,
+      "b22_predicted": 4.748880105288707e-06,
+      "b22_against_published": 0.09497760210577413
+    },
+    {
+      "deviation": "toroidal shift",
+      "amplitude_for_b11": 0.006356138563794279,
+      "b22_over_b11": 0.15812063899455664,
+      "b22_predicted": 7.906031949727832e-06,
+      "b22_against_published": 0.1581206389945566
+    },
+    {
+      "deviation": "vertical shift",
+      "amplitude_for_b11": 0.012078286448500985,
+      "b22_over_b11": 5.113670868291917,
+      "b22_predicted": 0.00025568354341459586,
+      "b22_against_published": 5.1136708682919165
+    }
+  ]
+}
