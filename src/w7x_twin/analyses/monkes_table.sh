@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
-# The single-surface MONKES tables, one script with a mode per question.
+# The MONKES drift-kinetic runs, one script with a mode per question.
 #
+#   monkes_table.sh radial    <monkes_root> <boozmn> <run_dir> [threads]
 #   monkes_table.sh scan      <monkes_root> <boozmn> <surface> <run_dir>
 #   monkes_table.sh cases     <monkes_root> <cases_dir> [threads]
 #   monkes_table.sh converged <monkes_root> <run_dir>
 #   monkes_table.sh targeted  <monkes_root> <run_dir>
 #
+# radial: the radial scan every consumer reads, twelve surfaces at eleven
+# collisionalities reaching below what the energy convolution samples and six electric
+# fields spanning what E_r/v covers over it. A Boozer file that leaves out the
+# innermost surfaces forces extrapolation there, worth tens of per cent in the
+# coefficient, so the file must carry every interior surface.
 # scan: the collisionality scan on one flux surface at 21 x 43 x 100, affordable across
 # the whole range, its lowest point checked against a converged run.
 # cases: two collisionalities on twelve surfaces for each prepared case directory, the
@@ -22,7 +28,7 @@
 # runs the same arithmetic to eleven significant figures 31 times faster.
 set -euo pipefail
 
-MODE="${1:?mode: scan | cases | converged | targeted}"
+MODE="${1:?mode: radial | scan | cases | converged | targeted}"
 shift
 
 MKL="${MKL_LIBRARY:-/usr/lib/x86_64-linux-gnu/libmkl_rt.so}"
@@ -61,6 +67,29 @@ solve () {  # dir boozmn surface n_theta n_zeta n_xi nu-block er-block skip-if-d
 }
 
 case "$MODE" in
+radial)
+  ROOT="${1:-$HOME/monkes}"
+  BOOZMN="${2:-$HOME/w7x-twin/cache/monkes_cases/standard_beta1/boozmn.nc}"
+  RUN="${3:-$HOME/w7x-twin/cache/monkes_radial}"
+  THREADS="${4:-${MKL_NUM_THREADS:-14}}"
+  SURFACES=(0.02 0.05 0.10 0.16 0.25 0.35 0.45 0.55 0.65 0.75 0.85 0.95)
+  mkdir -p "$RUN"
+  for SURFACE in "${SURFACES[@]}"; do
+    solve "$RUN/s$SURFACE" "$BOOZMN" "$SURFACE" 31 55 140 "1.000000e-06,
+3.000000e-06,
+1.000000e-05,
+3.000000e-05,
+1.000000e-04,
+3.000000e-04,
+1.000000e-03,
+3.000000e-03,
+1.000000e-02,
+3.000000e-02,
+1.000000e-01" \
+      "0.000000e+00, 3.000000e-05, 1.000000e-04, 3.000000e-04, 1.000000e-03, 3.000000e-03" yes
+  done
+  echo "done: $RUN"
+  ;;
 scan)
   ROOT="${1:-$HOME/monkes}"
   BOOZMN="${2:-$ROOT/run_bz/boozmn.nc}"
@@ -145,7 +174,7 @@ targeted)
   echo "done: $RUN"
   ;;
 *)
-  echo "unknown mode: $MODE (scan | cases | converged | targeted)" >&2
+  echo "unknown mode: $MODE (radial | scan | cases | converged | targeted)" >&2
   exit 2
   ;;
 esac
