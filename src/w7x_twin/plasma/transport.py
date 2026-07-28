@@ -1198,6 +1198,221 @@ def beam_deposition(
     )
 
 
+# -- fast-ion orbit losses ---------------------------------------------------------
+
+# Collisionless guiding-centre following of beam ions from their deposition to the
+# vessel: dX/dt = v_par b + b x (mu grad|B| + m v_par^2 kappa) / (qB) and
+# dv_par/dt = -(mu/m) b . grad|B|, the equation set BEAMS3D integrates, on the
+# trilinear field with its exact gradient.
+
+
+@dataclasses.dataclass
+class FastIonLosses:
+    """Orbit-loss record of one followed beam population."""
+
+    loss_fraction: float
+    particles: int
+    lost: int
+    followed_s: float
+    mean_loss_time_s: float
+    times_s: np.ndarray
+    lost_fraction_of_time: np.ndarray
+    energy_drift: float
+    note: str
+
+
+def birth_positions(
+    wout, s_samples: np.ndarray, rng: np.random.Generator
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """(R, phi, Z) on the sampled flux surfaces at uniform poloidal and toroidal angle."""
+    xm = np.asarray(wout.xm)
+    xn = np.asarray(wout.xn)
+    surfaces = np.clip(
+        np.round(np.asarray(s_samples) * (int(wout.ns) - 1)).astype(int),
+        0, int(wout.ns) - 1,
+    )
+    rmnc = np.asarray(wout.rmnc)[:, surfaces]
+    zmns = np.asarray(wout.zmns)[:, surfaces]
+    theta = rng.uniform(0.0, 2.0 * np.pi, len(surfaces))
+    phi = rng.uniform(0.0, 2.0 * np.pi, len(surfaces))
+    angle = xm[:, None] * theta[None, :] - xn[:, None] * phi[None, :]
+    radius = np.sum(np.cos(angle) * rmnc, axis=0)
+    height = np.sum(np.sin(angle) * zmns, axis=0)
+    return radius, phi, height
+
+
+def guiding_centre_rates(
+    vacuum, radius, phi, height, v_par, mu_over_m, charge_over_m
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """(dR/dt, dphi/dt, dZ/dt, dv_par/dt) of the first-order guiding centre."""
+    b_vec, grad = vacuum.with_gradient(radius, phi, height)
+    magnitude = np.sqrt(np.sum(b_vec * b_vec, axis=0))
+    unit = b_vec / np.maximum(magnitude, 1e-30)
+
+    # Physical-component gradient of |B| and of the unit vector; the cylindrical basis
+    # adds the b_phi^2 / R centrifugal and b_R b_phi / R coupling terms to (b.grad)b.
+    grad_b = np.sum(b_vec[:, None, :] * grad, axis=0) / np.maximum(magnitude, 1e-30)
+    unit_grad = (grad - unit[:, None, :] * grad_b[None, :, :]) / np.maximum(
+        magnitude, 1e-30
+    )
+    kappa = np.sum(unit[None, :, :] * np.swapaxes(unit_grad, 0, 1), axis=1)
+    safe_r = np.maximum(radius, 1e-9)
+    kappa[0] -= unit[1] * unit[1] / safe_r
+    kappa[1] += unit[0] * unit[1] / safe_r
+
+    push = mu_over_m * grad_b + (v_par * v_par)[None, :] * kappa
+    drift = (
+        np.stack(
+            [
+                unit[1] * push[2] - unit[2] * push[1],
+                unit[2] * push[0] - unit[0] * push[2],
+                unit[0] * push[1] - unit[1] * push[0],
+            ]
+        )
+        / (charge_over_m * np.maximum(magnitude, 1e-30))
+    )
+    velocity = v_par[None, :] * unit + drift
+    return (
+        velocity[0],
+        velocity[1] / safe_r,
+        velocity[2],
+        -mu_over_m * np.sum(unit * grad_b, axis=0),
+    )
+
+
+def fast_ion_losses(
+    vacuum,
+    wout,
+    vessel,
+    deposition: Deposition,
+    injection_energy_ev: float = 55.0e3,
+    mass_amu: float = 1.0,
+    particles: int = 512,
+    follow_s: float = 2.0e-3,
+    time_step_s: float = 1.0e-8,
+    pitch: tuple[float, float] = (0.4, 0.8),
+    co_injection: bool = False,
+    wall_check_every: int = 2,
+    seed: int = 20260728,
+) -> FastIonLosses:
+    """Follow a birth population sampled from the deposition until it strikes the
+    vessel or the following time ends, and report the lost power fraction.
+
+    Collisionless and at full injection energy, so what is counted is the prompt and
+    ripple-trapped orbit loss; collisional scattering over the ~30 ms slowing time is
+    outside the model. The pitch band is an aiming assumption the record carries."""
+    rng = np.random.default_rng(seed)
+    weights = np.clip(np.asarray(deposition.profile_w, dtype=float), 0.0, None)
+    total = float(np.trapezoid(weights, deposition.s))
+    if total <= 0.0:
+        return FastIonLosses(
+            loss_fraction=float("nan"), particles=0, lost=0, followed_s=follow_s,
+            mean_loss_time_s=float("nan"), times_s=np.zeros(0),
+            lost_fraction_of_time=np.zeros(0), energy_drift=float("nan"),
+            note="the deposition carries no absorbed power",
+        )
+    density = weights / total
+    s_samples = rng.choice(
+        deposition.s, size=particles,
+        p=density / np.sum(density),
+    )
+    radius, phi, height = birth_positions(wout, s_samples, rng)
+
+    mass = mass_amu * PROTON_MASS
+    speed = np.sqrt(2.0 * ELEMENTARY_CHARGE * injection_energy_ev / mass)
+    sign = 1.0 if co_injection else -1.0
+    pitch_samples = sign * rng.uniform(pitch[0], pitch[1], particles)
+    v_par = speed * pitch_samples
+    b_vec, _ = vacuum.with_gradient(radius, phi, height)
+    field_t = np.sqrt(np.sum(b_vec * b_vec, axis=0))
+    mu_over_m = 0.5 * speed * speed * (1.0 - pitch_samples**2) / field_t
+    charge_over_m = ELEMENTARY_CHARGE / mass
+    initial_energy = 0.5 * v_par**2 + mu_over_m * field_t
+
+    steps = int(round(follow_s / time_step_s))
+    grid_phi = np.linspace(0.0, 2.0 * np.pi / vessel.num_field_periods, 96, endpoint=False)
+    wall = vessel.resample(grid_phi)
+    slot_of = len(grid_phi) * vessel.num_field_periods / (2.0 * np.pi)
+
+    alive = np.isfinite(field_t)
+    lost = np.zeros(particles, dtype=bool)
+    loss_time = np.full(particles, np.nan)
+    record_every = max(1, steps // 200)
+    times: list[float] = []
+    lost_curve: list[float] = []
+
+    for step in range(steps):
+        if not alive.any():
+            break
+        dt = time_step_s
+
+        def rates(r_now, p_now, z_now, v_now):
+            return guiding_centre_rates(
+                vacuum, r_now, p_now, z_now, v_now, mu_over_m, charge_over_m
+            )
+
+        k1 = rates(radius, phi, height, v_par)
+        k2 = rates(
+            radius + 0.5 * dt * k1[0], phi + 0.5 * dt * k1[1],
+            height + 0.5 * dt * k1[2], v_par + 0.5 * dt * k1[3],
+        )
+        k3 = rates(
+            radius + 0.5 * dt * k2[0], phi + 0.5 * dt * k2[1],
+            height + 0.5 * dt * k2[2], v_par + 0.5 * dt * k2[3],
+        )
+        k4 = rates(
+            radius + dt * k3[0], phi + dt * k3[1],
+            height + dt * k3[2], v_par + dt * k3[3],
+        )
+        radius = radius + (dt / 6.0) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0])
+        phi = phi + (dt / 6.0) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1])
+        height = height + (dt / 6.0) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2])
+        v_par = v_par + (dt / 6.0) * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3])
+
+        if step % wall_check_every == 0:
+            left_grid = alive & ~(np.isfinite(radius) & np.isfinite(height))
+            slots = (
+                np.mod(phi, 2.0 * np.pi / vessel.num_field_periods) * slot_of
+            ).astype(int) % len(grid_phi)
+            outside = np.zeros(particles, dtype=bool)
+            for slot in np.unique(slots[alive]):
+                here = alive & (slots == slot)
+                outside[here] = wall.outside(radius[here], height[here], int(slot))
+            fresh = alive & (outside | left_grid)
+            if fresh.any():
+                lost |= fresh
+                loss_time[fresh] = step * time_step_s
+                alive &= ~fresh
+                radius = np.where(alive, radius, np.nan)
+        if step % record_every == 0:
+            times.append(step * time_step_s)
+            lost_curve.append(float(np.mean(lost)))
+
+    survivors = alive & np.isfinite(radius) & np.isfinite(height)
+    b_vec, _ = vacuum.with_gradient(
+        np.where(survivors, radius, 6.0), phi, np.where(survivors, height, 0.0)
+    )
+    final_field = np.sqrt(np.sum(b_vec * b_vec, axis=0))
+    final_energy = 0.5 * v_par**2 + mu_over_m * final_field
+    drift = np.abs(final_energy[survivors] - initial_energy[survivors]) / np.maximum(
+        initial_energy[survivors], 1e-30
+    )
+    return FastIonLosses(
+        loss_fraction=float(np.mean(lost)),
+        particles=particles,
+        lost=int(np.count_nonzero(lost)),
+        followed_s=follow_s,
+        mean_loss_time_s=float(np.nanmean(loss_time)) if lost.any() else float("nan"),
+        times_s=np.array(times),
+        lost_fraction_of_time=np.array(lost_curve),
+        energy_drift=float(np.median(drift)) if survivors.any() else float("nan"),
+        note=(
+            f"collisionless, full energy, pitch {pitch[0]:g} to {pitch[1]:g} "
+            f"{'co' if co_injection else 'counter'}-injected, {follow_s * 1e3:g} ms"
+        ),
+    )
+
+
 # -- from turbulence ---------------------------------------------------------------
 
 # Turbulent diffusivity: the linear gamma / k_y^2 spectrum closed by the measured saturation response.

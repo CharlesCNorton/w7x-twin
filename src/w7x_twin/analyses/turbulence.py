@@ -266,11 +266,11 @@ def run_gyrokinetic() -> int:
     write_record(GYROKINETIC_OUT, {"cases": rows}, geometry=twin.geometry)
 
     print()
-    header = f"{'configuration':22s} {'a/L_T':>6s} " + "".join(
-        f"{f'ky={k:g}':>10s}" for k in KY_VALUES
+    layout = _common.Table(
+        ("configuration", "22s"), ("a/L_T", "6.1f"),
+        *((f"ky={k:g}", "10.4f") for k in KY_VALUES),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for configuration in configurations:
         for tprim in LINEAR_GRADIENTS:
             values = [
@@ -286,10 +286,7 @@ def run_gyrokinetic() -> int:
                 )
                 for ky in KY_VALUES
             ]
-            print(
-                f"{configuration:22s} {tprim:6.1f} "
-                + "".join(f"{value:10.4f}" for value in values)
-            )
+            layout.row(configuration, tprim, *values)
 
     # The gyro-Bohm unit at the reference ion temperature, so the mixing-length sum
     # can be quoted alongside the neoclassical diffusivity it is meant to sit beside.
@@ -297,13 +294,15 @@ def run_gyrokinetic() -> int:
     unit = gyro_bohm(1800.0, abs(float(equilibrium.wout.b0)), float(equilibrium.wout.Aminor_p))
     print()
     print(f"gyro-Bohm unit at 1.8 keV: {unit:.4f} m^2/s")
-    header = f"{'configuration':22s} {'a/L_T':>6s} {'sum gamma/ky^2':>15s} {'x gyro-Bohm':>13s}"
-    print(header)
-    print("-" * len(header))
+    layout = _common.Table(
+        ("configuration", "22s"), ("a/L_T", "6.1f"), ("sum gamma/ky^2", "15.4f"),
+        ("x gyro-Bohm", "13.3f"),
+    )
+    layout.begin()
     for configuration in configurations:
         for tprim in LINEAR_GRADIENTS:
             total = quasilinear(rows, configuration, tprim)
-            print(f"{configuration:22s} {tprim:6.1f} {total:15.4f} {total * unit:12.3f}")
+            layout.row(configuration, tprim, total, total * unit)
     print()
     print(
         "The mixing-length sum carries an order-one constant that only a nonlinear\n"
@@ -334,7 +333,11 @@ GRID_GRADIENTS = (0.5, 1.0, 2.0, 3.0, 4.0, 6.0)
 #: stabilisation exactly where the edge diffusivity sets the temperature profile.
 DENSITY_GRADIENTS = (0.0, 1.0, 2.0, 3.0, 4.5, 6.0)
 #: Binormal wavenumbers, normalised to the ion gyroradius.
-WAVENUMBERS = (0.4, 0.7, 1.0, 2.0, 4.0)
+#: Binormal wavenumbers in units of the ion sound radius. The last row is electron
+#: scale: at the hydrogen mass ratio ky = 15 is ky rho_e = 0.35, where the ETG growth
+#: rate peaks, so the grid carries one row of the electron-scale drive beside the
+#: ion-scale rows the transport channel integrates.
+WAVENUMBERS = (0.4, 0.7, 1.0, 2.0, 4.0, 15.0)
 #: Concurrent stella processes. Each run is single-threaded, so this is the machine's
 #: parallelism and not the code's.
 GRID_WORKERS = 4
@@ -374,12 +377,16 @@ def grid_case(
     shutil.copy(wout, directory / wout.name)
 
     nzed = 96 if ky <= 1.0 else 128
-    delt = 0.05 if ky <= 1.0 else 0.02
+    # The explicit step obeys the same stability margin the ion rows established, so
+    # the electron-scale row shrinks it as 1/ky; the mode also grows and settles faster
+    # by the same factor, so its trace is cut proportionally.
+    delt = 0.05 if ky <= 1.0 else 0.02 if ky <= 4.0 else 0.08 / ky
+    tend = TEND if ky <= 4.0 else TEND * 4.0 / ky
     started = time.monotonic()
     for tolerated in (0, TOLERATED_INCONSISTENCIES):
         text = INPUT_TEMPLATE.format(
             wout=wout.name, torflux=torflux, periods=FIELD_PERIODS, ky=ky,
-            tprim=tprim, nzed=nzed, delt=delt, tend=TEND,
+            tprim=tprim, nzed=nzed, delt=delt, tend=tend,
         ).replace("fprim = 1.0", f"fprim = {fprim}")
         text = text.replace(
             "  verbose = .false.",
@@ -506,12 +513,11 @@ def run_growth_rate_grid() -> int:
     # have. At fixed temperature gradient a peaked density profile moves the spectrum, and
     # the size of that is what a post-pellet enhancement has to come from.
     print()
-    header = (
-        f"{'configuration':16s} {'s':>6s} {'a/L_T':>6s} "
-        + "".join(f"{f'a/L_n={f:g}':>12s}" for f in DENSITY_GRADIENTS)
+    layout = _common.Table(
+        ("configuration", "16s"), ("s", "6.2f"), ("a/L_T", "6.1f"),
+        *((f"a/L_n={f:g}", "12.4f") for f in DENSITY_GRADIENTS),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for configuration in configurations:
         for torflux in GRID_SURFACES:
             for tprim in GRID_GRADIENTS:
@@ -530,10 +536,7 @@ def run_growth_rate_grid() -> int:
                         if np.isfinite(value) and value > 0.0:
                             total_sum += value / ky**2
                     sums.append(total_sum)
-                print(
-                    f"{configuration:16s} {torflux:6.2f} {tprim:6.1f} "
-                    + "".join(f"{v:12.4f}" for v in sums)
-                )
+                layout.row(configuration, torflux, tprim, *sums)
     print(f"\nwrote {GRID_RECORD}")
     return 0
 
@@ -880,14 +883,13 @@ def run_saturation() -> int:
                 print(f"  {done}/{len(jobs)} runs finished", flush=True)
 
     points = []
-    header = (
-        f"{'s':>6s} {'a/L_T':>6s} {'sum gamma/ky^2':>15s} {'Q_i [gB]':>10s} "
-        f"{'Q_e [gB]':>10s} {'scatter':>9s} {'constant':>10s} {'chi [m2/s]':>11s} "
-        f"{'state':>12s}"
+    layout = _common.Table(
+        ("s", "6.2f"), ("a/L_T", "6.1f"), ("sum gamma/ky^2", "15.4f"),
+        ("Q_i [gB]", "10.3f"), ("Q_e [gB]", "10.3f"), ("scatter", "9.3f"),
+        ("constant", "10.3f"), ("chi [m2/s]", "11.2f"), ("state", ">12s"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for answer in sorted(answers, key=lambda a: (a["torflux"], a["gradient"])):
         total = table.mixing_length_sum(
             answer["torflux"], answer["gradient"],
@@ -910,11 +912,10 @@ def run_saturation() -> int:
             "diffusivity_m2_s": diffusivity * unit,
         }
         points.append(point)
-        print(
-            f"{answer['torflux']:6.2f} {answer['gradient']:6.1f} {total:15.4f} "
-            f"{flux:10.3f} {electron_flux:10.3f} {scatter:9.3f} {constant:10.3f} "
-            f"{diffusivity * unit:11.2f} "
-            f"{answer.get('nonlinear_saturation_state', 'unknown'):>12s}"
+        layout.row(
+            answer["torflux"], answer["gradient"], total, flux, electron_flux,
+            scatter, constant, diffusivity * unit,
+            answer.get("nonlinear_saturation_state", "unknown"),
         )
 
     saturated = [
@@ -974,7 +975,10 @@ def run_saturation() -> int:
     else:
         print("no run saturated, so no constant is measured")
 
-    write_record(CONSTANT_RECORD, {"points": points}, geometry=twin.geometry)
+    write_record(
+        CONSTANT_RECORD, {"points": points}, geometry=twin.geometry,
+        reads=(GRID_RECORD,),
+    )
     return 0
 
 
@@ -1036,13 +1040,13 @@ def run_turbulence() -> int:
     )
     quench = transport.shear_quench_model(table, field_t, minor)
 
-    header = (
-        f"{'density':>7s} {'P [MW]':>6s} {'W [MJ]':>8s} {'tau [s]':>9s} {'ISS04 [s]':>10s} "
-        f"{'over ISS04':>11s} {'T_e(0)':>9s} {'chi_neo(0)':>11s} {'chi_turb(0)':>12s}"
+    layout = _common.Table(
+        ("density", ">7s"), ("P [MW]", "6.1f"), ("W [MJ]", "8.3f"),
+        ("tau [s]", "9.4f"), ("ISS04 [s]", "10.4f"), ("over ISS04", "11.3f"),
+        ("T_e(0)", "9.0f"), ("chi_neo(0)", "11.4f"), ("chi_turb(0)", "12.4f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
 
     rows = []
     for power, profiles, label in (
@@ -1076,12 +1080,11 @@ def run_turbulence() -> int:
                 "electron_temperature_ev": solution.electron_temperature_ev.tolist(),
             }
         )
-        print(
-            f"{label:>7s} {power / 1e6:6.1f} {solution.stored_energy_j / 1e6:8.3f} "
-            f"{solution.confinement_time_s:9.4f} {solution.iss04_time_s:10.4f} "
-            f"{over:11.3f} {solution.electron_temperature_ev[0]:9.0f} "
-            f"{base_chi[0]:11.4f} "
-            f"{solution.chi_anomalous_m2_s[0]:12.4f}"
+        layout.row(
+            label, power / 1e6, solution.stored_energy_j / 1e6,
+            solution.confinement_time_s, solution.iss04_time_s, over,
+            solution.electron_temperature_ev[0], base_chi[0],
+            solution.chi_anomalous_m2_s[0],
         )
 
     # What the pellet's density gradient is worth: the peaked and the flat profile at the
@@ -1134,5 +1137,6 @@ def run_turbulence() -> int:
             "cases": rows,
         },
         geometry=twin.geometry,
+        reads=(GRID_RECORD, CONSTANT_RECORD),
     )
     return 0

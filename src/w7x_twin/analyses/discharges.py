@@ -17,7 +17,7 @@ from w7x_twin.mhd import diagnostics
 from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
 from w7x_twin.plasma import current, edge, kinetics, neoclassical, transport
 from w7x_twin.plasma.kinetics import log_gradient
-from w7x_twin.records import programmes
+from w7x_twin.records import ensemble, programmes
 
 #: Confinement against the ISS04 scaling. The overview reports 1.4 for the discharge
 #: that carries the highest triple product, so that is what the model runs at where a
@@ -193,12 +193,12 @@ def run_errorfield() -> int:
     )
 
     print()
-    header = (
-        f"{'scale':>7s} {'A0 [A]':>8s} {'lines':>6s} {'module max/min':>15s} "
-        f"{'module spread':>14s} {'unit max/min':>13s} {'L_c [m]':>9s}"
+    layout = _common.Table(
+        ("scale", "7.2f"), ("A0 [A]", "8.1f"), ("lines", "6d"),
+        ("module max/min", "15.3f"), ("module spread", "14.4f"),
+        ("unit max/min", "13.3f"), ("L_c [m]", "9.1f"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     rows = []
     for scale in SCALES:
         state = twin.state(configuration)
@@ -209,12 +209,12 @@ def run_errorfield() -> int:
             torus, state.currents, equilibrium, chi_edge, crossing, vessel, elements
         )
         rows.append({"scale": scale, "amplitude_a": scale * setting.amplitude_a, **loads})
-        print(
-            f"{scale:7.2f} {scale * setting.amplitude_a:8.1f} {loads['lines']:6d} "
-            f"{loads.get('module_max_over_min', float('nan')):15.3f} "
-            f"{loads.get('module_relative_spread', float('nan')):14.4f} "
-            f"{loads.get('unit_max_over_min', float('nan')):13.3f} "
-            f"{loads.get('median_connection_length_m', float('nan')):9.1f}"
+        layout.row(
+            scale, scale * setting.amplitude_a, loads["lines"],
+            loads.get("module_max_over_min", float("nan")),
+            loads.get("module_relative_spread", float("nan")),
+            loads.get("unit_max_over_min", float("nan")),
+            loads.get("median_connection_length_m", float("nan")),
         )
 
     ideal = next(r for r in rows if r["scale"] == 0.0)
@@ -450,13 +450,12 @@ def run_symmetrise() -> int:
         "2/2 error field": control,
         "both": {**trim, **control},
     }
-    header = (
-        f"{'field present':>18s} {'lines':>6s} {'module spread':>14s} {'unit spread':>12s} "
-        f"{'module max/min':>15s}"
+    layout = _common.Table(
+        ("field present", ">18s"), ("lines", "6d"), ("module spread", "14.4f"),
+        ("unit spread", "12.4f"), ("module max/min", "15.3f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
 
     rows = []
     for label, waveform in cases.items():
@@ -467,11 +466,9 @@ def run_symmetrise() -> int:
             torus, currents, vessel, elements, chi_edge, separatrix, crossing
         )
         rows.append({"field": label, **answer})
-        print(
-            f"{label:>18s} {answer['lines']:6d} {answer['module_spread']:14.4f} "
-            f"{answer['unit_spread']:12.4f} "
-            f"{answer.get('module_max_over_min', float('nan')):15.3f}",
-            flush=True,
+        layout.row(
+            label, answer["lines"], answer["module_spread"], answer["unit_spread"],
+            answer.get("module_max_over_min", float("nan")),
         )
 
     published = {
@@ -552,7 +549,7 @@ def biot_savart(positions, currents, points: np.ndarray) -> np.ndarray:
     """Field of a set of closed filaments at Cartesian points, in tesla."""
     mu0_over_4pi = 1.0e-7
     out = np.zeros_like(points)
-    for filament, current in zip(positions, currents, strict=True):
+    for filament, current_a in zip(positions, currents, strict=True):
         start = filament[:-1]
         segment = filament[1:] - filament[:-1]
         delta = points[:, None, :] - start[None, :, :]
@@ -567,7 +564,7 @@ def biot_savart(positions, currents, points: np.ndarray) -> np.ndarray:
         weight = np.where(
             denominator > 0.0, (norm_a + norm_b) / np.maximum(denominator, 1e-30), 0.0
         )
-        out += current * mu0_over_4pi * np.einsum("psk,ps->pk", cross, weight)
+        out += current_a * mu0_over_4pi * np.einsum("psk,ps->pk", cross, weight)
     return out
 
 
@@ -609,13 +606,12 @@ def run_trim_radius() -> int:
 
     waveform = machine.trim_waveform(setting.amplitude_a, setting.phase_degrees)
 
-    header = (
-        f"{'radius [m]':>11s} {'b11':>12s} {'b11 per amp':>13s} "
-        f"{'against published':>18s} {'current for it [A]':>19s}"
+    layout = _common.Table(
+        ("radius [m]", "11.2f"), ("b11", "12.3e"), ("b11 per amp", "13.3e"),
+        ("against published", ">18s"), ("current for it [A]", "19.1f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     rows = []
     for radius in RADII:
         positions, currents = trim_field(twin, radius, waveform)
@@ -635,9 +631,9 @@ def run_trim_radius() -> int:
                 "current_for_published_a": needed,
             }
         )
-        print(
-            f"{radius:11.2f} {amplitude:12.3e} {per_amp:13.3e} "
-            f"{amplitude / published.value:17.3f}x {needed:19.1f}"
+        layout.row(
+            radius, amplitude, per_amp,
+            f"{amplitude / published.value:17.3f}x", needed,
         )
 
     # The radius at which the measured current produces the published amplitude. The
@@ -765,13 +761,13 @@ def deviate(filament: np.ndarray, mode: str, amplitude: float) -> np.ndarray:
 def spectrum_of(equilibrium, members, mode: str, amplitude: float):
     """The harmonics a deviation of those filaments puts on the boundary."""
     positions, values = [], []
-    for filament, current in members:
+    for filament, current_a in members:
         # The deviation's field is the moved coil less the coil where it should be, so the
         # machine field cancels and what is left is the perturbation alone.
         positions.append(deviate(filament, mode, amplitude))
-        values.append(current)
+        values.append(current_a)
         positions.append(filament)
-        values.append(-current)
+        values.append(-current_a)
     return field.normal_field_spectrum(
         FilamentField(positions, values), equilibrium,
         reference_t=abs(float(equilibrium.wout.b0)),
@@ -796,13 +792,13 @@ def run_intrinsic() -> int:
         f"{one_one.mode_phase_degrees:.0f} and {two_two.mode_phase_degrees:.0f} degrees"
     )
 
-    header = (
-        f"{'deviation':30s} {'amplitude':>12s} {'b11':>11s} {'b22':>11s} "
-        f"{'b22 / b11':>10s} {'phase 1/1':>10s} {'phase 2/2':>10s}"
+    layout = _common.Table(
+        ("deviation", "30s"), ("amplitude", "12.4f"), ("b11", "11.3e"),
+        ("b22", "11.3e"), ("b22 / b11", "10.3f"), ("phase 1/1", ">10s"),
+        ("phase 2/2", ">10s"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
 
     rows = []
     for mode, amplitudes in (
@@ -826,22 +822,22 @@ def run_intrinsic() -> int:
                     "phase_22_degrees": float(np.degrees(np.angle(b22))),
                 }
             )
-            print(
-                f"{mode:30s} {amplitude:12.4f} {abs(b11):11.3e} {abs(b22):11.3e} "
-                f"{abs(b22) / max(abs(b11), 1e-30):10.3f} "
-                f"{np.degrees(np.angle(b11)):9.1f}° {np.degrees(np.angle(b22)):9.1f}°"
+            layout.row(
+                mode, amplitude, abs(b11), abs(b22),
+                abs(b22) / max(abs(b11), 1e-30),
+                f"{np.degrees(np.angle(b11)):9.1f}°",
+                f"{np.degrees(np.angle(b22)):9.1f}°",
             )
 
     # Each deviation scaled to reproduce the measured 1/1, then held against the 2/2 it
     # then predicts. The field of a small displacement is linear in it, so the scaling is a
     # ratio and not another scan.
     print()
-    header = (
-        f"{'deviation':30s} {'amplitude for b11':>18s} {'b22 predicted':>14s} "
-        f"{'against published':>18s}"
+    layout = _common.Table(
+        ("deviation", "30s"), ("amplitude for b11", "18.5f"),
+        ("b22 predicted", "14.3e"), ("against published", ">18s"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     summary = []
     for mode in sorted({r["deviation"] for r in rows}, key=lambda m: m):
         here = [r for r in rows if r["deviation"] == mode]
@@ -861,10 +857,7 @@ def run_intrinsic() -> int:
                 "b22_against_published": predicted / published.value,
             }
         )
-        print(
-            f"{mode:30s} {needed:18.5f} {predicted:14.3e} "
-            f"{predicted / published.value:17.3f}x"
-        )
+        layout.row(mode, needed, predicted, f"{predicted / published.value:17.3f}x")
 
     within = [s for s in summary if 0.5 <= s["b22_against_published"] <= 2.0]
     best = min(summary, key=lambda s: abs(np.log(s["b22_against_published"])))
@@ -1036,22 +1029,19 @@ def run_history() -> int:
         f"of {inductive:.2f} s"
     )
 
-    header = (
-        f"{'t [s]':>7s} {'P [MW]':>8s} {'W [MJ]':>8s} {'I_boot [kA]':>12s} "
-        f"{'iota edge':>10s}"
+    layout = _common.Table(
+        ("t [s]", "7.2f"), ("P [MW]", "8.2f"), ("W [MJ]", "8.3f"),
+        ("I_boot [kA]", "12.2f"), ("iota edge", "10.5f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for moment in (0.5, 1.0, 1.6, 1.8, 2.5, 3.5, 5.0, 6.0):
         if moment > DURATION_S:
             continue
         point = trace.at(moment)
-        print(
-            f"{point['time_s']:7.2f} {point['power_w'] / 1e6:8.2f} "
-            f"{point['stored_energy_j'] / 1e6:8.3f} "
-            f"{point['bootstrap_current_a'] / 1e3:12.2f} "
-            f"{point['edge_transform']:10.5f}"
+        layout.row(
+            point["time_s"], point["power_w"] / 1e6, point["stored_energy_j"] / 1e6,
+            point["bootstrap_current_a"] / 1e3, point["edge_transform"],
         )
 
     # How far behind the current runs: the energy settles within a few tau_E of the step and
@@ -1313,7 +1303,15 @@ def run_profiles() -> int:
             f"inside it"
         )
 
-    write_record(PROFILES_OUT, {"discharges": records}, geometry=twin.geometry)
+    write_record(
+        PROFILES_OUT,
+        {"discharges": records},
+        geometry=twin.geometry,
+        reads=(
+            "results/turbulence/growth_rate_grid.json",
+            "results/turbulence/mixing_length_constant.json",
+        ),
+    )
     return 0
 
 
@@ -1339,8 +1337,12 @@ LAUNCH_PLANES = 5
 STRIKE_LINE_PERCENTILE = 90
 
 
-def compare(name: str, modelled: float, measured: programmes.Measured) -> dict:
-    """One residual, against the band the published accuracy supports."""
+def compare(
+    name: str, modelled: float, measured: programmes.Measured,
+    samples: np.ndarray | None = None,
+) -> dict:
+    """One residual against the band the published accuracy supports; ``samples`` of
+    the modelled value under the stated input tolerances attach its interval."""
     low, high = measured.band()
     inside = bool(low <= modelled <= high)
     relative = (
@@ -1351,7 +1353,7 @@ def compare(name: str, modelled: float, measured: programmes.Measured) -> dict:
         f"measured {measured.value:12.4g} {measured.unit:9s} "
         f"{100 * relative:+8.1f} %"
     )
-    return {
+    entry = {
         "quantity": name,
         "modelled": float(modelled),
         "measured": measured.value,
@@ -1360,6 +1362,25 @@ def compare(name: str, modelled: float, measured: programmes.Measured) -> dict:
         "within_published_accuracy": inside,
         "source": measured.source,
     }
+    if samples is not None and len(samples):
+        values = np.asarray(samples, dtype=float)
+        rng = np.random.default_rng(1)
+        resampled = values[rng.integers(0, len(values), size=(512, len(values)))]
+        entry["interval"] = {
+            "samples": int(len(values)),
+            "median": float(np.median(values)),
+            "median_error": float(np.std(np.median(resampled, axis=1))),
+            "percentile_5": float(np.percentile(values, 5)),
+            "percentile_95": float(np.percentile(values, 95)),
+            "fraction_inside_band": float(np.mean((values >= low) & (values <= high))),
+        }
+        print(
+            f"      tolerances put it {entry['interval']['percentile_5']:12.4g} to "
+            f"{entry['interval']['percentile_95']:12.4g}, "
+            f"{100 * entry['interval']['fraction_inside_band']:.0f} % of samples inside "
+            f"the published band"
+        )
+    return entry
 
 
 def power_balance(
@@ -1735,10 +1756,6 @@ def run_discharge() -> int:
     ripple = neoclassical.load_ripple()
     reference = twin.solve(twin.state("standard"), SCAN)
     minor_radius = float(reference.wout.Aminor_p)
-    chi_neoclassical = neoclassical.diffusivity_model(coefficients, ripple, minor_radius)
-    chi_no_field = neoclassical.diffusivity_model(
-        coefficients, ripple, minor_radius, radial_field_v_m=0.0
-    )
     core_radius = programmes.MACHINE_MEASUREMENTS["core_neoclassical_radius_m"].value
 
     # The carbon fraction the machine's measured effective charge implies. Fully stripped
@@ -1801,7 +1818,16 @@ def run_discharge() -> int:
                 )
             energy, tau = stored_energy(twin, power, density_axis, enhancement)
             checks.append(
-                compare(f"stored energy, {phase}", energy, measured_energy)
+                compare(
+                    f"stored energy, {phase}", energy, measured_energy,
+                    samples=ensemble.headline_energy_samples(
+                        twin, power,
+                        dataclasses.replace(
+                            kinetics.HIGH_PERFORMANCE, density_axis_m3=density_axis
+                        ),
+                        enhancement,
+                    ),
+                )
             )
 
             # Bracketed across the reported confinement range where none is published.
@@ -2208,11 +2234,10 @@ def run_discharge() -> int:
     print()
     print("machine quantities, against the same source")
     traced = layer_geometry(twin)
-    vessel, elements, frame = traced["vessel"], traced["elements"], traced["frame"]
+    elements, frame = traced["elements"], traced["frame"]
     vacuum, separatrix = traced["vacuum"], traced["separatrix"]
     strikes, lengths_m, mask = traced["strikes"], traced["lengths_m"], traced["mask"]
     wanted_elements = traced["wanted_elements"]
-    equilibrium = traced["equilibrium"]
 
     machine_checks = []
 
@@ -2475,11 +2500,62 @@ def run_discharge() -> int:
             f"targets at the implied carbon of {carbon_fraction:.4f}, leaving a net "
             f"peak of {radiator['net_peak_heat_flux_w_m2'] / 1e6:.2f} MW/m2"
         )
+
+        # The exhaust checks carried as intervals: the traced mapping is fixed, and the
+        # stated input tolerances are sampled through the closure and the deskewed
+        # profile — the heating power to five per cent, the perpendicular diffusivity
+        # to its published fifty, the carbon to the effective charge's twenty.
+        rng = np.random.default_rng(20260728)
+        chi_spread = programmes.MACHINE_MEASUREMENTS[
+            "sol_perpendicular_diffusivity_m2_s"
+        ].relative_uncertainty
+        charge_spread = programmes.MACHINE_MEASUREMENTS[
+            "effective_charge"
+        ].relative_uncertainty
+        closure_samples: dict[str, list[float]] = {
+            "width_m": [], "area_m2": [], "net_peak_w_m2": []
+        }
+        for _ in range(64):
+            power_k = 5.0e6 * (1.0 + 0.05 * rng.standard_normal())
+            chi_k = max(chi_edge * (1.0 + chi_spread * rng.standard_normal()), 0.05)
+            carbon_k = max(
+                carbon_fraction * (1.0 + charge_spread * rng.standard_normal()), 0.0
+            )
+            crossing_k = max(power_k - float(balance.radiated_power_w), 1.0e5)
+            try:
+                closed_k = edge.close_layer(
+                    upstream, crossing_k, strike_line, chi_k, incidence,
+                    area_of_width, length_of_width=length_of_width,
+                )
+                weights_k = edge.layer_weights(
+                    strikes.start_r, separatrix, closed_k["width_m"]
+                )
+                profile_k = edge.target_profile(
+                    strikes, elements, frame, weights_k, crossing_k,
+                    incidence_by_line=sine_by_line, deskew=True,
+                    offset_by_line=strikes.start_r - separatrix,
+                )
+                radiator_k = edge.target_radiator(
+                    profile_k, upstream, incidence, carbon_k,
+                    density_width_m=closed_k["width_m"] / np.sqrt(3.0),
+                    dilution_by_element=edge.strip_dilution(
+                        strikes, elements, frame, weights_k
+                    ),
+                )
+            except ValueError:
+                continue
+            closure_samples["width_m"].append(float(profile_k["peak_integral_width_m"]))
+            closure_samples["area_m2"].append(float(closed_k["area_m2"]))
+            closure_samples["net_peak_w_m2"].append(
+                float(radiator_k["net_peak_heat_flux_w_m2"])
+            )
+
         machine_checks.append(
             compare(
                 "strike-line width",
                 profile["peak_integral_width_m"],
                 programmes.MACHINE_MEASUREMENTS["strike_line_width_m"],
+                samples=np.array(closure_samples["width_m"]),
             )
         )
         # The same solve at the perpendicular diffusivity a boundary code needs to
@@ -2521,6 +2597,7 @@ def run_discharge() -> int:
                 "target heat flux",
                 radiator["net_peak_heat_flux_w_m2"],
                 programmes.MACHINE_MEASUREMENTS["divertor_measured_power_density_w_m2"],
+                samples=np.array(closure_samples["net_peak_w_m2"]),
             )
         )
         machine_checks.append(
@@ -2528,6 +2605,7 @@ def run_discharge() -> int:
                 "wetted area",
                 closed["area_m2"],
                 programmes.MACHINE_MEASUREMENTS["strike_line_area_m2"],
+                samples=np.array(closure_samples["area_m2"]),
             )
         )
 
@@ -2535,6 +2613,15 @@ def run_discharge() -> int:
         DISCHARGE_OUT,
         {
             "renormalisation": RENORMALISATION,
+            "tolerance_propagation": (
+                "stored-energy checks carry the interval the ensemble tolerances "
+                "support, sampled through a perturbed equilibrium and balance per "
+                "draw; the exhaust checks carry the closure interval on the fixed "
+                "traced mapping; trace-bound connection lengths, digitised-figure "
+                "comparisons and the drift-kinetic shares carry none, since their "
+                "inputs are the traced geometry and the published figures rather "
+                "than the stated tolerances"
+            ),
             "programmes": records,
             "machine": machine_checks,
         },

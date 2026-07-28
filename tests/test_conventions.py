@@ -167,8 +167,6 @@ def test_ampere_turns_are_the_product():
 
 def _square_vessel():
     """A square annulus cross-section, so containment has an analytic answer."""
-    angles = np.linspace(0.0, 2.0 * np.pi, 5)[:-1]
-    r = 5.5 + 0.5 * np.sign(np.cos(angles + np.pi / 4)) * np.sqrt(2) / 2 * 2
     contour_r = np.array([5.0, 6.0, 6.0, 5.0])
     contour_z = np.array([-0.5, -0.5, 0.5, 0.5])
     return Vessel(
@@ -660,7 +658,7 @@ def test_conductivity_reduction_is_below_unity_when_d33_is():
 
 # -- target incidence -------------------------------------------------------
 
-def _slab(dr_dphi: float, dz_dphi: float, num_cuts: int = 5) -> "Component":
+def _slab(dr_dphi: float, dz_dphi: float, num_cuts: int = 5):
     """A flat target whose contour drifts linearly with toroidal angle."""
     from w7x_twin.hardware.walls import Component
 

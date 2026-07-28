@@ -6,7 +6,6 @@ import dataclasses
 import numpy as np
 import shutil
 import subprocess
-import sys
 import vmecpp
 from pathlib import Path
 
@@ -314,15 +313,22 @@ def split_diffusivity_model(
     reference_surface: float = SINGLE_SURFACE,
     carbon_fraction: float | None = None,
     capture: dict | None = None,
+    momentum_energy_correction: bool = False,
 ):
     """Return ``(chi_e, chi_i)(s, Te, Ti, n)`` with the ambipolar field solved per point;
-    ``capture`` stores the solved field profile under ``radial_field_v_m``."""
+    ``capture`` stores the solved field profile under ``radial_field_v_m`` and the
+    measured momentum-and-energy-scattering bound of the electron channel under
+    ``electron_channel_correction``. The bound stays out of the channel unless asked
+    for: it measures below a tenth of a per cent on the solved tables, and the
+    two-moment closure's own spread is of the same order, so carrying it would state
+    a precision the closure does not have."""
 
     def channels(s, electron_temperature_ev, ion_temperature_ev, density):
         s = np.asarray(s, dtype=float)
         electron_out = np.empty_like(s)
         ion_out = np.empty_like(s)
         field_out = np.zeros_like(s)
+        correction_out = np.zeros_like(s)
         radius = minor_radius_m * np.sqrt(s)
         dln_n = np.gradient(np.log(np.maximum(density, 1e-30)), radius)
         dln_te = np.gradient(
@@ -366,6 +372,7 @@ def split_diffusivity_model(
                         field += weight * answer["field"]
             electron_total = 0.0
             ion_total = 0.0
+            correction_total = 0.0
             for table, weight in surface_tables(
                 coefficients, float(surface), which="d11", ripple=ripple,
                 reference_surface=reference_surface,
@@ -382,11 +389,26 @@ def split_diffusivity_model(
                     mass=PROTON_MASS, charge_number=1.0,
                     radial_field_v_m=field, z_effective=z_effective,
                 )
-            electron_out[index] = electron_total
+                corrected = channel_correction(
+                    table, density_m3=n,
+                    electron_temperature_ev=electron_t,
+                    ion_temperature_ev=ion_t,
+                    density_gradient=float(dln_n[index]),
+                    electron_temperature_gradient=float(dln_te[index]),
+                    ion_temperature_gradient=float(dln_ti[index]),
+                    z_effective=z_effective, radial_field_v_m=field,
+                )
+                if np.isfinite(corrected["relative_correction"]):
+                    correction_total += weight * corrected["relative_correction"]
+            electron_out[index] = electron_total * (
+                1.0 + (correction_total if momentum_energy_correction else 0.0)
+            )
             ion_out[index] = ion_total
             field_out[index] = field
+            correction_out[index] = correction_total
         if capture is not None:
             capture["radial_field_v_m"] = field_out.copy()
+            capture["electron_channel_correction"] = correction_out.copy()
         return electron_out, ion_out
 
     return channels
@@ -883,6 +905,240 @@ def extrapolated_weight(
         "below_collisionality": share(nu_over_v < nu_hat.min()),
         "above_collisionality": share(nu_over_v > nu_hat.max()),
         "above_field": share(field_over_v > fields.max()),
+    }
+
+
+# -- momentum and energy-scattering restoration ------------------------------------
+
+# The pitch-angle operator behind the monoenergetic tables conserves neither parallel
+# momentum nor the heat flow the energy-scattering part of the collision operator
+# carries. Both are restored at moment level: a parallel force balance in the flow and
+# heat-flow moments of both species, with the viscous damping measured by the tabled
+# D33 against its Spitzer value and the friction calibrated to the Spitzer factors the
+# package already carries. The restored flows feed back on the radial channel through
+# the same D31 kernel the bootstrap drive uses, transposed by Onsager reciprocity —
+# the term the stellarator literature reports as small, computed here rather than cited.
+
+
+def viscous_frequency_ratio(
+    coefficients: MonoenergeticCoefficients, nu_over_v: np.ndarray,
+    field_over_v: np.ndarray,
+) -> np.ndarray:
+    """nu_viscous / nu at each energy, from D33 against its Spitzer value."""
+    d33 = _interpolate_coefficient(coefficients, nu_over_v, field_over_v, "d33")
+    spitzer = _interpolate_coefficient(
+        coefficients, nu_over_v, field_over_v, "d33_spitzer"
+    )
+    ratio = np.where(
+        (d33 > 0.0) & (spitzer > 0.0), spitzer / np.maximum(d33, 1e-300), 1.0
+    )
+    return np.maximum(ratio - 1.0, 0.0)
+
+
+def _flow_basis(energy: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Laguerre-3/2 flow polynomials: the mean flow and the heat-flow moment."""
+    return np.ones_like(energy), energy - 2.5
+
+
+def restored_flows(
+    coefficients: MonoenergeticCoefficients,
+    density_m3: float,
+    electron_temperature_ev: float,
+    ion_temperature_ev: float,
+    density_gradient: float,
+    electron_temperature_gradient: float,
+    ion_temperature_gradient: float,
+    z_effective: float = 1.0,
+    radial_field_v_m: float = 0.0,
+    num_energy: int = 64,
+) -> dict:
+    """Parallel flow and heat-flow moments of both species under momentum-conserving
+    friction, in metres per second.
+
+    The bare flows come from the D31 convolution in the units the verified bootstrap
+    kernel fixes, and the balance [viscosity + full friction] u = [viscosity +
+    pitch-angle friction] u_bare returns the bare solution when the friction is the
+    pitch-angle one and the Spitzer flows when the viscosity vanishes. The friction
+    matrix is the classical two-moment one, its resistivity anchored to the package's
+    tabulated Spitzer factors."""
+    energy, weight = maxwellian_nodes(num_energy)
+    flow, heat = _flow_basis(energy)
+    norm_flow = float(np.sum(weight * energy * flow * flow))
+    norm_heat = float(np.sum(weight * energy * heat * heat))
+
+    species = {}
+    for name, mass, charge_number, temperature, dln_t in (
+        ("electron", ELECTRON_MASS, -1.0, electron_temperature_ev,
+         electron_temperature_gradient),
+        ("ion", PROTON_MASS, 1.0, ion_temperature_ev, ion_temperature_gradient),
+    ):
+        thermal_speed = np.sqrt(2.0 * temperature * ELEMENTARY_CHARGE / mass)
+        speed = thermal_speed * np.sqrt(energy)
+        nu = deflection_frequency(
+            speed, density_m3, temperature, mass, charge_number, z_effective
+        )
+        # The unlike and like shares of the deflection, so the momentum returned by the
+        # unlike collisions and the conserving structure of the like ones are separable.
+        from scipy.special import erf
+
+        x = speed / thermal_speed
+        like = erf(x) - _chandrasekhar(x)
+        unlike_share = z_effective / (z_effective + like)
+        d31 = _interpolate_coefficient(
+            coefficients, nu / speed, radial_field_v_m / speed, "d31"
+        )
+        visc = nu * viscous_frequency_ratio(
+            coefficients, nu / speed, radial_field_v_m / speed
+        )
+        charge = charge_number * ELEMENTARY_CHARGE
+        a1 = density_gradient - charge * radial_field_v_m / (
+            temperature * ELEMENTARY_CHARGE
+        )
+        # Flow per unit force in metres per second: (T/q) carries the DKES-normalised
+        # D31 into the units the verified parallel-current kernel fixes.
+        scale = temperature / charge_number
+
+        def project(rate):
+            return np.array(
+                [[float(np.sum(weight * energy * rate * flow * flow)) / norm_flow,
+                  float(np.sum(weight * energy * rate * flow * heat)) / norm_flow],
+                 [float(np.sum(weight * energy * rate * heat * flow)) / norm_heat,
+                  float(np.sum(weight * energy * rate * heat * heat)) / norm_heat]]
+            )
+
+        drive = scale * d31 * (a1 + (energy - 1.5) * dln_t)
+        species[name] = {
+            "pitch": project(nu),
+            "pitch_unlike": project(nu * unlike_share),
+            "pitch_like": project(nu * (1.0 - unlike_share)),
+            "viscosity": project(visc),
+            "bare": np.array(
+                [float(np.sum(weight * energy * drive * flow)) / norm_flow,
+                 float(np.sum(weight * energy * drive * heat)) / norm_heat]
+            ),
+            "d31": d31,
+            "nu_reference": float(
+                np.sum(weight * energy * nu) / np.sum(weight * energy)
+            ),
+        }
+
+    # The full friction keeps the pitch operator's own K-resolved unlike-collision
+    # rates but returns their momentum through the ion flow, and replaces the
+    # like-collision scattering by the conserving two-moment operator: no force on
+    # the flow moment, and the classical sqrt(2)-scaled like rate on the heat-flow
+    # moment. This is the standard two-moment truncation; the exact tabulated Spitzer
+    # factors remain the bootstrap chain's own restoration.
+    factor = min(float(spitzer_correction(max(float(z_effective), 1.0))), 1.0 - 1e-9)
+    unlike = species["electron"]["pitch_unlike"]
+    for name in ("electron", "ion"):
+        species[name]["conserving_like"] = np.array(
+            [[0.0, 0.0], [0.0, np.sqrt(2.0) * species[name]["pitch_like"][1, 1]]]
+        )
+
+    mass_e = ELECTRON_MASS * density_m3
+    mass_i = PROTON_MASS * density_m3
+
+    # Rows: electron flow, electron heat flow, ion flow, ion heat flow.
+    full = np.zeros((4, 4))
+    full[0:2, 0:2] = mass_e * (unlike + species["electron"]["conserving_like"])
+    full[0:2, 2] = -mass_e * unlike[:, 0]
+    full[2, 0:2] = -mass_e * unlike[0, :]
+    full[2, 2] = mass_e * unlike[0, 0]
+    full[3, 3] = mass_i * species["ion"]["conserving_like"][1, 1]
+
+    pitch = np.zeros((4, 4))
+    bare = np.zeros(4)
+    for offset, name, mass_density in ((0, "electron", mass_e), (2, "ion", mass_i)):
+        pitch[offset:offset + 2, offset:offset + 2] = (
+            mass_density * species[name]["pitch"]
+        )
+        full[offset:offset + 2, offset:offset + 2] += (
+            mass_density * species[name]["viscosity"]
+        )
+        pitch[offset:offset + 2, offset:offset + 2] += (
+            mass_density * species[name]["viscosity"]
+        )
+        bare[offset:offset + 2] = species[name]["bare"]
+
+    # With no viscosity the conserving friction leaves a Galilean zero mode, a common
+    # parallel shift that exerts no force; the minimum-norm solution fixes that gauge
+    # and the operator-difference force below is invariant under it.
+    flows = np.linalg.lstsq(full, pitch @ bare, rcond=None)[0]
+    return {
+        "electron_flow": float(flows[0]),
+        "electron_heat_flow": float(flows[1]),
+        "ion_flow": float(flows[2]),
+        "ion_heat_flow": float(flows[3]),
+        "bare_flows": bare,
+        "species": species,
+        "spitzer_factor": factor,
+    }
+
+
+def channel_correction(
+    coefficients: MonoenergeticCoefficients,
+    density_m3: float,
+    electron_temperature_ev: float,
+    ion_temperature_ev: float,
+    density_gradient: float,
+    electron_temperature_gradient: float,
+    ion_temperature_gradient: float,
+    z_effective: float = 1.0,
+    radial_field_v_m: float = 0.0,
+) -> dict:
+    """Electron heat-channel correction from the restored flows, by reciprocity.
+
+    The friction force the restored flows leave on the electrons acts as a parallel
+    thermodynamic force, and the same D31 kernel that turns radial forces into
+    parallel flow turns it back into a radial flux; the (K - 3/2) weight of the heat
+    channel is carried by the heat-flow component of the kernel."""
+    answer = restored_flows(
+        coefficients, density_m3, electron_temperature_ev, ion_temperature_ev,
+        density_gradient, electron_temperature_gradient, ion_temperature_gradient,
+        z_effective=z_effective, radial_field_v_m=radial_field_v_m,
+    )
+    electron = answer["species"]["electron"]
+    mass_density = ELECTRON_MASS * density_m3
+    pressure = density_m3 * electron_temperature_ev * ELEMENTARY_CHARGE
+    solved = np.array([answer["electron_flow"], answer["electron_heat_flow"]])
+
+    # The collision operator's change of action on the electrons at the solved flows:
+    # the momentum the unlike collisions return through the ion flow, and the
+    # conserving like operator against the scattering one, per electron pressure, in
+    # inverse metres, on the orthogonal (1, K - 5/2) flow basis.
+    unlike = electron["pitch_unlike"]
+    force = (
+        mass_density
+        * (
+            -unlike[:, 0] * answer["ion_flow"]
+            + (electron["conserving_like"] - electron["pitch_like"]) @ solved
+        )
+        / pressure
+    )
+
+    # Reciprocity: the same K-weighted D31 kernel that turns radial forces into
+    # parallel flow turns the reconstructed parallel force back into a radial heat
+    # flux, (K - 3/2)-weighted for the heat channel.
+    energy, weight = maxwellian_nodes()
+    scale = electron_temperature_ev / -1.0
+    reconstructed = force[0] + force[1] * (energy - 2.5)
+    delta_q_over_nt = -float(
+        np.sum(
+            weight * energy * (energy - 1.5) * scale * electron["d31"] * reconstructed
+        )
+    )
+    bare = heat_flux(
+        coefficients, density_m3, electron_temperature_ev, density_gradient,
+        electron_temperature_gradient, mass=ELECTRON_MASS, charge_number=-1.0,
+        z_effective=z_effective, radial_field_v_m=radial_field_v_m,
+    )
+    return {
+        "delta_q_over_nt": float(delta_q_over_nt),
+        "bare_q_over_nt": float(bare),
+        "relative_correction": float(
+            delta_q_over_nt / bare if bare else float("nan")
+        ),
+        "flows": answer,
     }
 
 

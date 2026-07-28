@@ -594,6 +594,21 @@ from source and is distributed by CIEMAT free of charge to individuals and insti
 not operating for profit, with commercial use requiring prior permission from its
 authors. Neither is vendored here.
 
+The pitch-angle operator behind the tables conserves neither parallel momentum nor the
+heat flow the energy-scattering part of the collision operator carries.
+`neoclassical.restored_flows` restores both at moment level: a parallel force balance
+in the flow and heat-flow moments of both species, with the viscous damping measured
+by the tabled D₃₃ against its Spitzer value, the unlike-collision momentum returned
+through the ion flow at the tables' own energy-resolved rates, and the like collisions
+replaced by their conserving two-moment operator. The restored flows feed back on the
+radial electron channel through the same D₃₁ kernel the bootstrap drive uses,
+transposed by Onsager reciprocity. Measured on the solved tables the channel moves by
++0.02 to +0.05 per cent across the profile, and the two-moment closure's own spread is
+of that order — the smallness the stellarator literature states for ripple-dominated
+radial transport, computed here rather than cited. The channel therefore carries the
+measured bound in its record and not the correction itself; the bootstrap chain keeps
+its own exact Spitzer-factor restoration.
+
 ## Bootstrap current
 
 `current.py` evaluates the Redl formula [4] from the kinetic profiles and the
@@ -1432,6 +1447,17 @@ through its flat-top, the post-pellet phase of 20171207.006 at 1.30, and the hig
 product at 1.40. The model is run at each discharge's own measured value rather than at one
 constant, so what a residual measures is the power balance and not the constant.
 
+The stated input tolerances travel with the headline comparisons. Every stored-energy
+check carries the interval the ensemble machinery supports — each Sobol draw perturbs
+the circuit currents, the toroidal flux, the profiles and the heating power, solves its
+own equilibrium and balance, and the check records the 5th to 95th percentile beside the
+share of draws inside the published band. The exhaust checks carry the closure interval
+on the fixed traced mapping, the heating power sampled to its stated five per cent, the
+perpendicular diffusivity to its published fifty and the carbon to the effective
+charge's twenty. Trace-bound connection lengths and digitised-figure comparisons carry
+no interval, since their inputs are the traced geometry and the drawn curves rather
+than the stated tolerances; the record names that coverage.
+
 | Quantity | Model | Published | Residual |
 |---|---|---|---|
 | Stored energy, 20171207.006 heating phase | 1.091 MJ | 1.09 MJ | +0.1 % |
@@ -1613,9 +1639,9 @@ So placed, the bracketing case converges to machine precision at the physics pre
 
 | Volumes | Placement | Force residual | Island at 5/6 |
 |---|---|---|---|
-| 4 | bracketing | 1.67 × 10⁻¹⁵ | 27.2 mm |
-| 8 | bracketing | 8.76 × 10⁻⁵ | 23.7 mm |
-| 12 | on the resonance | 2.65 × 10⁻⁴ | 6.6 mm |
+| 4 | bracketing | 7.33 × 10⁻¹⁶ | 27.2 mm |
+| 8 | bracketing | 7.13 × 10⁻⁵ | 23.6 mm |
+| 8 | on the resonance | 5.58 × 10⁻⁴ | 9.5 mm |
 
 The four-volume bracketing equilibrium carries its island at a force residual five orders
 below the 10⁻¹⁰ tolerance, against the traced vacuum field's 17.4 mm at the same

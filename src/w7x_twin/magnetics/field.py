@@ -203,6 +203,51 @@ class VacuumField:
         br, bp, bz = self(r, phi, z)
         return np.sqrt(br * br + bp * bp + bz * bz)
 
+    def with_gradient(
+        self,
+        r: np.ndarray | float,
+        phi: np.ndarray | float,
+        z: np.ndarray | float,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """(B, grad B) of the trilinear interpolant: components (3, N) ordered
+        (R, phi, Z), and exact partials (3, 3, N) as d B_i / d(R, R dphi, Z), from the
+        same corner gather the field evaluation uses; NaN outside the grid."""
+        r = np.atleast_1d(np.asarray(r, dtype=float))
+        z = np.atleast_1d(np.asarray(z, dtype=float))
+        phi = np.mod(np.atleast_1d(np.asarray(phi, dtype=float)), self.period)
+
+        fr = (r - self.r_min) / self.dr
+        fz = (z - self.z_min) / self.dz
+        fp = phi / self.dphi
+
+        inside = (fr >= 0) & (fr <= self.num_r - 1) & (fz >= 0) & (fz <= self.num_z - 1)
+        inside &= np.isfinite(fr) & np.isfinite(fz) & np.isfinite(fp)
+        fr = np.where(inside, fr, 0.0)
+        fz = np.where(inside, fz, 0.0)
+        fp = np.where(inside, fp, 0.0)
+
+        ir = np.clip(np.floor(fr), 0, self.num_r - 2).astype(np.intp)
+        iz = np.clip(np.floor(fz), 0, self.num_z - 2).astype(np.intp)
+        ip = np.floor(fp).astype(np.intp) % self.num_phi
+        tr, tz, tp = fr - ir, fz - iz, fp - np.floor(fp)
+        ip1 = (ip + 1) % self.num_phi
+
+        value = np.zeros((3,) + fr.shape)
+        gradient = np.zeros((3, 3) + fr.shape)
+        for p_index, wp, sp in ((ip, 1 - tp, -1.0), (ip1, tp, 1.0)):
+            for dz_, wz, sz in ((0, 1 - tz, -1.0), (1, tz, 1.0)):
+                for dr_, wr, sr in ((0, 1 - tr, -1.0), (1, tr, 1.0)):
+                    corner = self.b[:, p_index, iz + dz_, ir + dr_]
+                    value += (wp * wz * wr) * corner
+                    gradient[:, 0] += (wp * wz * sr / self.dr) * corner
+                    gradient[:, 1] += (sp * wz * wr / self.dphi) * corner
+                    gradient[:, 2] += (wp * sz * wr / self.dz) * corner
+        # The toroidal derivative per radian becomes per arc metre at the point's R.
+        gradient[:, 1] /= np.maximum(r, 1e-9)
+        value = np.where(inside, value, np.nan)
+        gradient = np.where(inside, gradient, np.nan)
+        return value, gradient
+
 
 def field_at(
     table: vmecpp.MagneticFieldResponseTable,

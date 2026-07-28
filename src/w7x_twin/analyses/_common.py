@@ -4,6 +4,7 @@ arguments, fixed-width tables, and geometry-stamped result records."""
 from __future__ import annotations
 
 import functools
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -102,13 +103,26 @@ def _encode(value):
     raise TypeError(f"{type(value).__name__} is not JSON-serialisable")
 
 
+def file_digest(path: str | Path) -> str:
+    """Content digest of one file, or the marker for a file that is not there."""
+    path = Path(path)
+    if not path.is_file():
+        return "absent"
+    return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+
+
 def write_record(
-    path: str | Path, payload: dict, geometry=None, note: str = ""
+    path: str | Path, payload: dict, geometry=None, note: str = "",
+    reads: "tuple[str | Path, ...] | None" = None,
 ) -> Path:
-    """Write one results record, stamped with the geometry it was computed under."""
+    """Write one results record, stamped with the geometry it was computed under and
+    with the digests of the records it read, so a stale dependency is detectable."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    body = {"geometry": geometry.as_dict(), **payload} if geometry is not None else payload
+    body: dict = {"geometry": geometry.as_dict()} if geometry is not None else {}
+    if reads is not None:
+        body["reads"] = {str(source): file_digest(source) for source in reads}
+    body.update(payload)
     path.write_text(json.dumps(body, indent=2, default=_encode))
     print(f"\nwrote {path}{note}")
     return path

@@ -6,7 +6,6 @@ import dataclasses
 import numpy as np
 import os
 import subprocess
-import sys
 import time
 import vmecpp
 from pathlib import Path
@@ -57,7 +56,6 @@ def current_distribution(
 
     rmnc = np.asarray(wout.rmnc)
     zmns = np.asarray(wout.zmns)
-    gmnc = np.asarray(wout.gmnc)
     curru = np.asarray(wout.currumnc)
     currv = np.asarray(wout.currvmnc)
 

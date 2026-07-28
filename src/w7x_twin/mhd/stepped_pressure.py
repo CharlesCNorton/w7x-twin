@@ -394,7 +394,7 @@ def continuation(
     current = written.path
     for index, factor in enumerate(factors):
         extension = f"{written.extension}_p{index}"
-        target = scale_pressure(current, directory / f"{extension}.sp", factor)
+        scale_pressure(current, directory / f"{extension}.sp", factor)
         completed = subprocess.run(
             [str(executable), extension],
             cwd=directory,

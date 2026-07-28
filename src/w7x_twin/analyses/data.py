@@ -758,19 +758,18 @@ def run_cut_contours() -> int:
             meshes[source] = cad.MeshSections(vertices, triangles)
             print(f"{source}: {len(triangles)} triangles")
 
-    header = (
-        f"{'component':>16s} {'cuts':>5s} {'covered':>8s} {'moved [mm]':>11s} "
-        f"{'p95':>7s} {'raw residual':>13s}"
+    layout = _common.Table(
+        ("component", ">16s"), ("cuts", "5d"), ("covered", ">8s"),
+        ("moved [mm]", "11.1f"), ("p95", "7.1f"), ("raw residual", "13.1f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for filename in wanted:
         report = recut(filename, meshes[CONTOUR_SOURCES[filename]], write)
-        print(
-            f"{report['component']:>16s} {report['cuts']:5d} "
-            f"{100 * report['coverage']:7.1f}% {report['applied_median_mm']:11.1f} "
-            f"{report['applied_p95_mm']:7.1f} {report['raw_residual_median_mm']:13.1f}"
+        layout.row(
+            report["component"], report["cuts"], f"{100 * report['coverage']:7.1f}%",
+            report["applied_median_mm"], report["applied_p95_mm"],
+            report["raw_residual_median_mm"],
         )
     if write:
         print("\nrewrote the component files in place")
@@ -1304,20 +1303,19 @@ def run_export_field() -> int:
         .reshape((twin.coils.num_circuits, *shape))[: len(circuits)]
         .nbytes
     )
-    header = (
-        f"{'stride phi,Z,R':>16s} {'lines':>6s} {'median [mm]':>12s} "
-        f"{'worst [mm]':>11s} {'payload [MB]':>13s}"
+    layout = _common.Table(
+        ("stride phi,Z,R", ">16s"), ("lines", "6d"), ("median [mm]", "12.1f"),
+        ("worst [mm]", "11.1f"), ("payload [MB]", "13.2f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for row in scan:
         divisor = row["strides"][0] * row["strides"][1] * row["strides"][2]
         row["payload_mb"] = 3.0 * block_bytes / divisor / 1e6
-        print(
-            f"{str(tuple(row['strides'])):>16s} {row['lines']:6d} "
-            f"{1e3 * row['median_displacement_m']:12.1f} "
-            f"{1e3 * row['worst_displacement_m']:11.1f} {row['payload_mb']:13.2f}"
+        layout.row(
+            str(tuple(row["strides"])), row["lines"],
+            1e3 * row["median_displacement_m"], 1e3 * row["worst_displacement_m"],
+            row["payload_mb"],
         )
     resolving = [row for row in scan if row["resolves_the_migration"]]
     chosen = (
@@ -1435,15 +1433,15 @@ def run_page_error() -> int:
     rows = []
     half_width = float("nan")
     reference_strikes = None
-    for name, (field, steps, wall_every) in variants.items():
-        axis_r, axis_z = fieldlines.find_axis(field, steps_per_period=steps)
+    for name, (traced_field, steps, wall_every) in variants.items():
+        axis_r, axis_z = fieldlines.find_axis(traced_field, steps_per_period=steps)
         half = float(r_lcfs.max()) - axis_r
         if name == "page":
             half_width = half
 
         starts = axis_r + np.linspace(*STRIKE_LAYER, STRIKE_LINES) * half
         section, _ = fieldlines.trace(
-            field, starts, np.full(starts.shape, axis_z), turns=STRIKE_TURNS,
+            traced_field, starts, np.full(starts.shape, axis_z), turns=STRIKE_TURNS,
             steps_per_period=steps, plane_phi=0.0, vessel=vessel,
             components=elements, wall_check_every=wall_every,
         )
@@ -1452,7 +1450,7 @@ def run_page_error() -> int:
         fan = axis_r + np.linspace(*PAGE_LAYER, PAGE_LINES) * half
         wind_starts = np.concatenate([[axis_r], fan])
         fan_section, winding = fieldlines.trace(
-            field, wind_starts, np.full(wind_starts.shape, axis_z),
+            traced_field, wind_starts, np.full(wind_starts.shape, axis_z),
             turns=PAGE_TURNS, steps_per_period=steps, plane_phi=0.0,
             winding_reference=0,
         )
@@ -1712,7 +1710,36 @@ def run_validate() -> int:
     section("Records the newer analyses wrote, checked where they stand")
     stored_checks(Path("results"))
 
+    section("Record dependencies")
+    dependency_checks(Path("results"))
+
     return write_record(twin.geometry)
+
+
+def dependency_checks(results: Path) -> None:
+    """Records carrying input digests re-verified, so a stale dependency fails validation."""
+    stamped = 0
+    for record_path in sorted(results.rglob("*.json")):
+        try:
+            stored = json.loads(record_path.read_text())
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        reads = stored.get("reads") if isinstance(stored, dict) else None
+        if not isinstance(reads, dict) or not reads:
+            continue
+        stamped += 1
+        stale = sum(
+            1 for source, digest in reads.items()
+            if _common.file_digest(source) != digest
+        )
+        check(
+            f"{record_path.relative_to(results)} inputs current",
+            float(stale),
+            f"digests of the {len(reads)} records it read",
+            0.0, 0.0,
+        )
+    if not stamped:
+        print("  no record carries input digests yet")
 
 
 def stored_checks(results: Path) -> None:
@@ -1786,10 +1813,13 @@ def stored_checks(results: Path) -> None:
         bracketing = [r for r in rows if r.get("placement") == "bracketing it"
                       and np.isfinite(r.get("island_mm", float("nan"))) and r.get("island_mm", 0) > 0]
         if bracketing:
+            # The island is measured on the converged solve: a stalled case's section
+            # is not force balance, so its island is not the record's answer.
+            converged = min(bracketing, key=lambda r: r["force_residual"])
             check(
                 "stepped-pressure island, interfaces bracketing",
-                min(r["island_mm"] for r in bracketing),
-                "an island the placement leaves room for",
+                converged["island_mm"],
+                "an island the placement leaves room for, on the best-converged case",
                 5.0, 200.0, "mm",
             )
 

@@ -373,14 +373,14 @@
     {
       "section": "Records the newer analyses wrote, checked where they stand",
       "quantity": "stepped-pressure island, interfaces bracketing",
-      "value": 2.8894224629050225,
+      "value": 27.221784612213252,
       "unit": "mm",
-      "published": "an island the placement leaves room for",
+      "published": "an island the placement leaves room for, on the best-converged case",
       "band": [
         5.0,
         200.0
       ],
-      "agrees": false
+      "agrees": true
     },
     {
       "section": "Records the newer analyses wrote, checked where they stand",
@@ -393,8 +393,32 @@
         1000000.0
       ],
       "agrees": true
+    },
+    {
+      "section": "Record dependencies",
+      "quantity": "exhaust/recycling_pressure.json inputs current",
+      "value": 0.0,
+      "unit": "",
+      "published": "digests of the 1 records it read",
+      "band": [
+        0.0,
+        0.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Record dependencies",
+      "quantity": "plasma/transient_discharge.json inputs current",
+      "value": 0.0,
+      "unit": "",
+      "published": "digests of the 1 records it read",
+      "band": [
+        0.0,
+        0.0
+      ],
+      "agrees": true
     }
   ],
-  "agreed": 31,
-  "total": 32
+  "agreed": 34,
+  "total": 34
 }

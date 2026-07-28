@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import numpy as np
+import pytest
 
 from w7x_twin.analyses import _common
 from w7x_twin.hardware.walls import inside_contour
@@ -113,6 +114,36 @@ def test_write_record_stamps_geometry_and_encodes_numpy(tmp_path):
     assert stored["array"] == [0, 1, 2] and stored["value"] == 1.5
 
 
+def test_write_record_stamps_input_digests(tmp_path):
+    source = tmp_path / "input.json"
+    source.write_text('{"value": 1}')
+    record = _common.write_record(
+        tmp_path / "record.json", {"answer": 2}, reads=(source,)
+    )
+    stored = json.loads(record.read_text())
+    assert stored["reads"] == {str(source): _common.file_digest(source)}
+    assert stored["reads"][str(source)] != "absent"
+    assert _common.file_digest(tmp_path / "missing.json") == "absent"
+
+
+def test_dependency_check_flags_a_mutated_input(tmp_path, capsys):
+    from w7x_twin.analyses import data
+
+    source = tmp_path / "input.json"
+    source.write_text('{"value": 1}')
+    _common.write_record(tmp_path / "record.json", {"answer": 2}, reads=(source,))
+    data._records.clear()
+    data.dependency_checks(tmp_path)
+    assert [record["agrees"] for record in data._records] == [True]
+
+    source.write_text('{"value": 2}')
+    data._records.clear()
+    data.dependency_checks(tmp_path)
+    assert [record["agrees"] for record in data._records] == [False]
+    data._records.clear()
+    capsys.readouterr()
+
+
 def test_table_header_and_rows_share_one_layout(capsys):
     table = _common.Table(("name", "6s"), ("value", "7.3f"), ("note", "s"))
     table.begin()
@@ -122,6 +153,139 @@ def test_table_header_and_rows_share_one_layout(capsys):
     assert out[1] == "-" * len(out[0])
     assert out[2] == f"{'a':6s} {1.25:7.3f} -"
     assert out[0].index("value") + len("value") == out[2].index("1.250") + len("1.250")
+
+
+def _toroidal_field(field_t: float = 2.5, r0: float = 5.5):
+    """A pure 1/R toroidal field on a grid, as a VacuumField without a response table."""
+    from w7x_twin.magnetics.field import VacuumField
+
+    vacuum = object.__new__(VacuumField)
+    vacuum.num_r, vacuum.num_z, vacuum.num_phi = 121, 121, 36
+    vacuum.r_min, vacuum.r_max = 4.3, 6.7
+    vacuum.z_min, vacuum.z_max = -1.2, 1.2
+    vacuum.num_field_periods = 5
+    vacuum.period = 2.0 * np.pi / 5
+    vacuum.dr = (vacuum.r_max - vacuum.r_min) / (vacuum.num_r - 1)
+    vacuum.dz = (vacuum.z_max - vacuum.z_min) / (vacuum.num_z - 1)
+    vacuum.dphi = vacuum.period / vacuum.num_phi
+    radius = vacuum.r_min + vacuum.dr * np.arange(vacuum.num_r)
+    vacuum.b = np.zeros((3, vacuum.num_phi, vacuum.num_z, vacuum.num_r))
+    vacuum.b[1] = (field_t * r0 / radius)[None, None, :]
+    vacuum._digest = None
+    return vacuum
+
+
+def test_field_gradient_matches_the_interpolant():
+    vacuum = _toroidal_field()
+    rng = np.random.default_rng(5)
+    r = rng.uniform(4.5, 6.5, 200)
+    z = rng.uniform(-1.0, 1.0, 200)
+    phi = rng.uniform(0.0, 2.0 * np.pi, 200)
+    _, gradient = vacuum.with_gradient(r, phi, z)
+    h = 1e-6
+    for axis, offset in ((0, (h, 0.0, 0.0)), (2, (0.0, 0.0, h))):
+        upper = np.stack(vacuum(r + offset[0], phi, z + offset[2]))
+        lower = np.stack(vacuum(r - offset[0], phi, z - offset[2]))
+        numerical = (upper - lower) / (2.0 * h)
+        assert np.nanmax(np.abs(gradient[:, axis] - numerical)) < 1e-4
+
+
+def test_guiding_centre_reproduces_the_toroidal_drift():
+    from w7x_twin.plasma import transport
+
+    vacuum = _toroidal_field(field_t=2.5, r0=5.5)
+    energy_ev = 55.0e3
+    mass = transport.PROTON_MASS
+    speed = np.sqrt(2.0 * transport.ELEMENTARY_CHARGE * energy_ev / mass)
+    pitch = 0.6
+    radius = np.array([5.5])
+    phi = np.array([0.0])
+    height = np.array([0.0])
+    v_par = np.array([speed * pitch])
+    field_t = 2.5
+    mu_over_m = np.array([0.5 * speed**2 * (1.0 - pitch**2) / field_t])
+    charge_over_m = transport.ELEMENTARY_CHARGE / mass
+
+    _, dphi_dt, dz_dt, dv_dt = transport.guiding_centre_rates(
+        vacuum, radius, phi, height, v_par, mu_over_m, charge_over_m
+    )
+    # In B = B0 R0 / R the grad-B and curvature drifts are both vertical and upward
+    # for a positive ion: v_z = (v_par^2 + v_perp^2 / 2) / ((q/m) B R).
+    analytic = (v_par[0] ** 2 + 0.5 * speed**2 * (1.0 - pitch**2)) / (
+        charge_over_m * field_t * 5.5
+    )
+    assert abs(dz_dt[0] - analytic) < 5e-3 * abs(analytic)
+    assert abs(dv_dt[0]) < 1e-3 * speed
+    assert abs(dphi_dt[0] * 5.5 - v_par[0]) < 1e-3 * speed
+
+
+def _synthetic_tables(viscous: float) -> "object":
+    """Monoenergetic coefficients with a set viscous reduction of D33."""
+    from w7x_twin.plasma.neoclassical import MonoenergeticCoefficients
+
+    nu = np.logspace(-6, -1, 12)
+    return MonoenergeticCoefficients(
+        s=0.2,
+        collisionality=nu,
+        radial_field=np.zeros_like(nu),
+        d11=1e-3 * nu ** -0.5,
+        d31=np.full_like(nu, -0.5),
+        d33=np.full_like(nu, 1.0),
+        d33_spitzer=np.full_like(nu, 1.0 + viscous),
+    )
+
+
+def test_restored_flow_friction_reproduces_the_spitzer_factor():
+    from w7x_twin.plasma import neoclassical
+
+    for charge, factor in zip(
+        neoclassical.SPITZER_CHARGES[:-1], neoclassical.SPITZER_FACTORS[:-1]
+    ):
+        l11 = charge
+        l12 = 1.5 * charge
+        l22 = l12 * l12 / (l11 * (1.0 - factor))
+        assert abs((l11 - l12 * l12 / l22) / l11 - factor) < 1e-12
+
+
+def test_channel_correction_limits():
+    from w7x_twin.plasma import neoclassical
+
+    keywords = dict(
+        density_m3=8.0e19, electron_temperature_ev=2000.0,
+        ion_temperature_ev=1100.0, density_gradient=-2.0,
+        electron_temperature_gradient=-4.0, ion_temperature_gradient=-4.0,
+    )
+    ordinary = neoclassical.channel_correction(
+        _synthetic_tables(viscous=1.0), z_effective=1.0, **keywords
+    )
+    assert np.isfinite(ordinary["relative_correction"])
+    assert abs(ordinary["relative_correction"]) < 0.1
+
+    # With no viscosity the conserving friction has an exact Galilean zero mode; the
+    # minimum-norm gauge must return finite flows rather than fall back or blow up.
+    free = neoclassical.restored_flows(
+        _synthetic_tables(viscous=0.0), z_effective=1.0, **keywords
+    )
+    assert np.isfinite(free["electron_flow"]) and np.isfinite(free["ion_flow"])
+
+    # The correction is independent of the tabulated D31 sign convention: the kernel
+    # and the drives flip together.
+    flipped_tables = _synthetic_tables(viscous=1.0)
+    flipped = neoclassical.channel_correction(
+        neoclassical.MonoenergeticCoefficients(
+            s=flipped_tables.s,
+            collisionality=flipped_tables.collisionality,
+            radial_field=flipped_tables.radial_field,
+            d11=flipped_tables.d11,
+            d31=-flipped_tables.d31,
+            d33=flipped_tables.d33,
+            d33_spitzer=flipped_tables.d33_spitzer,
+        ),
+        z_effective=1.0, **keywords,
+    )
+    assert flipped["delta_q_over_nt"] == pytest.approx(
+        ordinary["delta_q_over_nt"], rel=1e-9
+    )
 
 
 def test_axis_memo_round_trips_through_the_cache_file(tmp_path):

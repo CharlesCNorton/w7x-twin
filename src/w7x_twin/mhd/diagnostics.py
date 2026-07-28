@@ -461,12 +461,8 @@ def global_modes(
             main[k] = (left + right) / cell + drive[i]
             if k < count - 1:
                 lower[k] = -right / cell
-        # Symmetrise by the cell measure, which turns the operator self-adjoint so the
+        # Symmetrise by the radius measure, which turns the operator self-adjoint so the
         # bending contributes a positive definite part and eigh applies.
-        cells = np.array([
-            0.5 * (radius[i + 1] - radius[i - 1]) for i in interior
-        ])
-        scale = np.sqrt(np.maximum(cells * np.maximum(radius[interior], 1e-9), 1e-30))
         operator = np.diag(main / np.maximum(radius[interior], 1e-9))
         for k in range(count - 1):
             coupling = lower[k] / np.sqrt(

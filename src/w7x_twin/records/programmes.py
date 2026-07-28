@@ -422,6 +422,16 @@ MACHINE_MEASUREMENTS: dict[str, Measured] = {
     "divertor_incidence_degrees": Measured(
         3.0, "deg", 0.33, _DIVERTOR_CONCEPT + ", an incident angle of up to 3 degrees"
     ),
+    # Simulated rather than directly measured, from the validated slowing-down chain:
+    # of the 2300 kW born in the standard configuration at 6.37e19 m^-3, 250 kW
+    # reaches the wall. The band is wide because the value is one discharge's table
+    # row and the density dependence is strong.
+    "nbi_fast_ion_wall_loss_fraction": Measured(
+        0.11, "", 0.5,
+        "S. A. Lazerson et al., Validation of the BEAMS3D neutral beam heating and "
+        "current-drive model on Wendelstein 7-X, Nucl. Fusion 61 (2021), "
+        "doi:10.1088/1741-4326/ac0771, table 2",
+    ),
     # The width the power occupies at the target, fitted to infrared thermography, and the
     # cross-field transport a boundary code needs to reproduce it. The heat diffusivity is
     # three times the particle one throughout that study, so the 0.2 m^2/s it settles on is

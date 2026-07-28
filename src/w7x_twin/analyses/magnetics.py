@@ -152,14 +152,13 @@ def run_response() -> int:
             + f", {time.monotonic() - started:.1f} s"
         )
 
-    header = (
-        f"{'point':36s} {'volume [mT]':>12s} {'extrapolated':>12s} "
-        f"{'correction':>10s} {'sheet [mT]':>11s} {'difference':>10s} "
-        f"{'to boundary [mm]':>16s}"
+    layout = _common.Table(
+        ("point", "36s"), ("volume [mT]", "12.4f"), ("extrapolated", "12.4f"),
+        ("correction", "10.4f"), ("sheet [mT]", "11.4f"), ("difference", ">10s"),
+        ("to boundary [mm]", ">16s"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     finest = panel_width(equilibrium, *SHEET_SAMPLINGS[-1])
     contour_r, contour_z = diagnostics.boundary_cut(equilibrium.wout, 0.0, 512)
     exterior = ~plasma_response.inside_boundary(
@@ -200,10 +199,10 @@ def run_response() -> int:
                 "relative_difference": difference,
             }
         )
-        print(
-            f"{label:36s} {1e3 * volume:12.4f} {1e3 * limit:12.4f} "
-            f"{1e3 * float(correction[index]):10.4f} {1e3 * sheet_value:11.4f} "
-            f"{100 * difference:9.2f}% {1e3 * standoff[index]:11.1f}"
+        layout.row(
+            label, 1e3 * volume, 1e3 * limit, 1e3 * float(correction[index]),
+            1e3 * sheet_value, f"{100 * difference:9.2f}%",
+            f"{1e3 * standoff[index]:11.1f}",
         )
     changes = record.changes()
     outside = [row for row in rows if row["outside_the_boundary"]]

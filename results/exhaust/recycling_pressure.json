@@ -1,4 +1,7 @@
 {
+  "reads": {
+    "results/exhaust/heat_flux.json": "292eb616e75420be"
+  },
   "heating_w": 5000000.0,
   "crossing_power_w": 4630000.0,
   "parallel_flux_w_m2": 100489150.5136331,

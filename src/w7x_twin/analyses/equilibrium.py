@@ -633,16 +633,14 @@ def run_winding() -> int:
     )
     print(f"the package assumes {assumed[0]} x {assumed[1]}")
 
-    header = (
-        f"{'layout':>12s} {'width [mm]':>11s} {'height [mm]':>12s} {'iota edge':>11s} "
-        f"{'against assumed':>16s} {'island [mm]':>12s}"
+    table = Table(
+        ("layout", ">12s"), ("width [mm]", "11.1f"), ("height [mm]", "12.1f"),
+        ("iota edge", "11.5f"), ("island [mm]", "12.1f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
 
     rows = []
-    reference_iota = None
     cases = [
         (f"{layers} x {per_layer}",
          coil_geometry.WindingPack(layers=layers, turns_per_layer=per_layer),
@@ -658,8 +656,6 @@ def run_winding() -> int:
         if not path.exists():
             build_with_pack(twin, pack, path)
         equilibrium, iota_edge, island = solve_with(twin, path)
-        if (layers, per_layer) == assumed and label != "CAD envelope":
-            reference_iota = iota_edge
         width = (layers - 1) * pack.pitch + coil_geometry.CONDUCTOR_SIZE_M
         height = (per_layer - 1) * pack.pitch_across_turns + coil_geometry.CONDUCTOR_SIZE_M
         rows.append(
@@ -673,10 +669,7 @@ def run_winding() -> int:
                 "island_mm": island,
             }
         )
-        print(
-            f"{label:>12s} {1e3 * width:11.1f} {1e3 * height:12.1f} "
-            f"{iota_edge:11.5f} {island:27.1f}"
-        )
+        table.row(label, 1e3 * width, 1e3 * height, iota_edge, island)
 
     iotas = np.array([r["iota_edge"] for r in rows])
     islands = np.array([r["island_mm"] for r in rows])

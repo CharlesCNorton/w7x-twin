@@ -11,6 +11,7 @@ import numpy as np
 from w7x_twin.analyses import _common
 from w7x_twin.analyses._common import arg, args, write_record
 from w7x_twin.hardware.walls import inside_contour
+from w7x_twin.magnetics.field import VacuumField
 from w7x_twin.mhd import diagnostics
 from w7x_twin.mhd.equilibrium import SCAN, Twin
 from w7x_twin.plasma import current, edge, kinetics, neoclassical, transport
@@ -272,6 +273,33 @@ def run_deposition() -> int:
         f"{transport.critical_energy_ev(temperature)[-1] / 1e3:.1f} keV"
     )
 
+    # The born ions followed as guiding centres until they strike the vessel: the
+    # deposition is where the power lands only if the orbits keep it there.
+    beam = transport.beam_deposition(
+        s, density, temperature, power,
+        injection_energy_ev=BEAM_ENERGY_EV, minor_radius_m=analysis.minor_radius_m,
+    )
+    vacuum = VacuumField(twin.response, twin.state("standard").currents)
+    losses = transport.fast_ion_losses(
+        vacuum, equilibrium.wout, _common.vessel(), beam,
+        injection_energy_ev=BEAM_ENERGY_EV,
+    )
+    published = programmes.MACHINE_MEASUREMENTS["nbi_fast_ion_wall_loss_fraction"]
+    low, high = published.band()
+    inside = bool(low <= losses.loss_fraction <= high)
+    print()
+    print(
+        f"of {losses.particles} followed beam ions {losses.lost} strike the vessel "
+        f"within {losses.followed_s * 1e3:g} ms, a loss fraction of "
+        f"{losses.loss_fraction:.3f} against the simulated "
+        f"{published.value:.2f} of the validated slowing-down chain "
+        f"({'inside' if inside else 'outside'} its band); {losses.note}"
+    )
+    print(
+        f"  the surviving orbits conserve their energy to a median "
+        f"{losses.energy_drift:.2e} over the following"
+    )
+
     write_record(
         DEPOSITION_OUT,
         {
@@ -284,6 +312,20 @@ def run_deposition() -> int:
             "ion_power_fraction": ion.tolist(),
             "electron_power_fraction": electron.tolist(),
             "schemes": rows,
+            "fast_ion_orbit_losses": {
+                "loss_fraction": losses.loss_fraction,
+                "particles": losses.particles,
+                "lost": losses.lost,
+                "followed_s": losses.followed_s,
+                "mean_loss_time_s": losses.mean_loss_time_s,
+                "times_s": losses.times_s.tolist(),
+                "lost_fraction_of_time": losses.lost_fraction_of_time.tolist(),
+                "energy_drift": losses.energy_drift,
+                "note": losses.note,
+                "published": published.value,
+                "published_source": published.source,
+                "within_published_accuracy": inside,
+            },
         },
         geometry=twin.geometry,
     )
@@ -665,14 +707,13 @@ def run_transport() -> int:
         f"{float(ripple.at(REFERENCE_SURFACE)):.5f}"
     )
 
-    header = (
-        f"{'ISS04 x':>8s} {'E_r [kV/m]':>10s} {'P [MW]':>7s} {'W [MJ]':>8s} "
-        f"{'Te(0)':>8s} {'chi_tot(0)':>11s} {'chi_neo(0)':>11s} {'chi_an(0)':>10s} "
-        f"{'neo frac':>9s}"
+    layout = _common.Table(
+        ("ISS04 x", "8.1f"), ("E_r [kV/m]", ">10s"), ("P [MW]", "7.1f"),
+        ("W [MJ]", "8.3f"), ("Te(0)", "8.0f"), ("chi_tot(0)", "11.4f"),
+        ("chi_neo(0)", "11.4f"), ("chi_an(0)", "10.4f"), ("neo frac", ">9s"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     rows = []
     minor = float(equilibrium.wout.Aminor_p)
     for renormalisation in RENORMALISATIONS:
@@ -694,25 +735,24 @@ def run_transport() -> int:
                 )
                 fraction = solution.neoclassical_fraction
                 rows.append((renormalisation, field_kv, power, solution))
-                label = "ambipolar" if field_kv is None else f"{field_kv:.0f}"
-                print(
-                    f"{renormalisation:8.1f} {label:>10s} {power / 1e6:7.1f} "
-                    f"{solution.stored_energy_j / 1e6:8.3f} "
-                    f"{solution.electron_temperature_ev[0]:8.0f} "
-                    f"{solution.chi_m2_s[0]:11.4f} "
-                    f"{solution.chi_neoclassical_m2_s[0]:11.4f} "
-                    f"{solution.chi_anomalous_m2_s[0]:10.4f} "
-                    f"{100 * fraction[0]:8.1f}%"
+                layout.row(
+                    renormalisation,
+                    "ambipolar" if field_kv is None else f"{field_kv:.0f}",
+                    power / 1e6, solution.stored_energy_j / 1e6,
+                    solution.electron_temperature_ev[0], solution.chi_m2_s[0],
+                    solution.chi_neoclassical_m2_s[0], solution.chi_anomalous_m2_s[0],
+                    f"{100 * fraction[0]:8.1f}%",
                 )
 
     print()
     print("radial profile at 5 MW, no radial electric field, ISS04 x 1.0")
     solution = [r for n, e, p, r in rows if p == 5e6 and e == 0.0 and n == 1.0][0]  # noqa: E501
     fraction = solution.neoclassical_fraction
-    print(
-        f"{'s':>6s} {'Te [eV]':>9s} {'chi_neo':>9s} {'chi_anom':>9s} {'neo %':>7s} "
-        f"{'off table':>10s}"
+    layout = _common.Table(
+        ("s", "6.3f"), ("Te [eV]", "9.0f"), ("chi_neo", "9.4f"),
+        ("chi_anom", "9.4f"), ("neo %", ">7s"), ("off table", ">10s"),
     )
+    print(layout.header)
     for i in range(0, len(solution.s), max(1, len(solution.s) // 8)):
         # How much of chi_neo the continuation outside the solved table supplied.
         outside = 0.0
@@ -728,11 +768,10 @@ def run_transport() -> int:
                 temperature_ev=float(solution.electron_temperature_ev[i]),
             )
             outside += weight * sum(shares.values())
-        print(
-            f"{solution.s[i]:6.3f} {solution.electron_temperature_ev[i]:9.0f} "
-            f"{solution.chi_neoclassical_m2_s[i]:9.4f} "
-            f"{solution.chi_anomalous_m2_s[i]:9.4f} {100 * fraction[i]:6.1f}% "
-            f"{100 * outside:9.1f}%"
+        layout.row(
+            solution.s[i], solution.electron_temperature_ev[i],
+            solution.chi_neoclassical_m2_s[i], solution.chi_anomalous_m2_s[i],
+            f"{100 * fraction[i]:6.1f}%", f"{100 * outside:9.1f}%",
         )
     return 0
 
@@ -871,20 +910,19 @@ def run_bootstrap() -> int:
     pressure_only = twin.solve_profiles("standard", profiles)
     reference_iota = float(np.asarray(pressure_only.wout.iotaf)[-1])
 
-    header = (
-        f"{'drive':24s} {'I_tor [kA]':>11s} {'mismatch':>9s} {'<beta> [%]':>11s} "
-        f"{'iota_edge':>10s} {'against pressure alone':>24s}"
+    layout = _common.Table(
+        ("drive", "24s"), ("I_tor [kA]", "11.2f"), ("mismatch", ">9s"),
+        ("<beta> [%]", "11.3f"), ("iota_edge", "10.5f"),
+        ("against pressure alone", ">24s"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for label, solution in results.items():
         iota_edge = float(np.asarray(solution.output.wout.iotaf)[-1])
         direction = "raises" if iota_edge > reference_iota else "lowers"
-        print(
-            f"{label:24s} {solution.total_current_a / 1e3:11.2f} "
-            f"{100 * solution.mismatch:8.2f}% "
-            f"{100 * float(solution.output.wout.betatotal):11.3f} "
-            f"{iota_edge:10.5f} {direction + ' it, ' + format(iota_edge - reference_iota, '+.5f'):>24s}"
+        layout.row(
+            label, solution.total_current_a / 1e3, f"{100 * solution.mismatch:8.2f}%",
+            100 * float(solution.output.wout.betatotal), iota_edge,
+            f"{direction} it, {iota_edge - reference_iota:+.5f}",
         )
     print(f"\npressure alone at the same beta gives iota_edge {reference_iota:.5f}")
 
@@ -921,12 +959,11 @@ def run_bootstrap() -> int:
             "momentum_correction": True,
         },
     }
-    header = (
-        f"{'drift-kinetic drive with'.ljust(32)} {'median gap':>11s} {'worst gap':>10s} "
-        f"{'I_tor [kA]':>11s} {'gap closed':>11s}"
+    layout = _common.Table(
+        ("drift-kinetic drive with", "32s"), ("median gap", ">11s"),
+        ("worst gap", ">10s"), ("I_tor [kA]", "11.2f"), ("gap closed", ">11s"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     attribution = []
     baseline_gap = None
     for label, keywords in variants.items():
@@ -947,9 +984,9 @@ def run_bootstrap() -> int:
                 "total_current_a": total, "share_of_gap_closed": closed,
             }
         )
-        print(
-            f"{label:32s} {100 * median_gap:10.1f}% {100 * worst_gap:9.1f}% "
-            f"{total / 1e3:11.2f} {100 * closed:10.1f}%"
+        layout.row(
+            label, f"{100 * median_gap:10.1f}%", f"{100 * worst_gap:9.1f}%",
+            total / 1e3, f"{100 * closed:10.1f}%",
         )
     redl_total = enclosed_current(equilibrium, s_redl, redl)
     print(f"  the Redl formula on the same equilibrium encloses {redl_total / 1e3:.2f} kA")
@@ -1178,19 +1215,19 @@ def run_coupled() -> int:
         rows.append(entry)
 
     print()
-    header = (
-        f"{'P [MW]':>7s} {'steps':>6s} {'W coupled':>11s} {'W sequential':>13s} "
-        f"{'I coupled':>11s} {'I sequential':>13s} {'iota coupled':>13s} {'sequential':>11s}"
+    layout = _common.Table(
+        ("P [MW]", "7.1f"), ("steps", "6d"), ("W coupled", ">11s"),
+        ("W sequential", ">13s"), ("I coupled", ">11s"), ("I sequential", ">13s"),
+        ("iota coupled", "13.5f"), ("sequential", "11.5f"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for entry in rows:
         c, s = entry["coupled"], entry["sequential"]
-        print(
-            f"{entry['power_w'] / 1e6:7.1f} {entry['iterations']:6d} "
-            f"{c['stored_energy_j'] / 1e6:10.4f}M {s['stored_energy_j'] / 1e6:12.4f}M "
-            f"{c['current_a'] / 1e3:10.3f}k {s['current_a'] / 1e3:12.3f}k "
-            f"{c['iota_edge']:13.5f} {s['iota_edge']:11.5f}"
+        layout.row(
+            entry["power_w"] / 1e6, entry["iterations"],
+            f"{c['stored_energy_j'] / 1e6:10.4f}M", f"{s['stored_energy_j'] / 1e6:12.4f}M",
+            f"{c['current_a'] / 1e3:10.3f}k", f"{s['current_a'] / 1e3:12.3f}k",
+            c["iota_edge"], s["iota_edge"],
         )
 
     write_record(
@@ -1361,6 +1398,10 @@ def run_computed() -> int:
             "cases": rows,
         },
         geometry=twin.geometry,
+        reads=(
+            "results/turbulence/growth_rate_grid.json",
+            "results/turbulence/mixing_length_constant.json",
+        ),
     )
     return 0
 
@@ -1603,5 +1644,6 @@ def run_transient() -> int:
             "axis_temperature_ev": axis_t,
         },
         geometry=twin.geometry,
+        reads=("results/exhaust/heat_flux.json",),
     )
     return 0

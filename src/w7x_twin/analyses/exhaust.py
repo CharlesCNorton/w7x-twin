@@ -88,8 +88,6 @@ def run_exhaust() -> int:
     vessel = _common.vessel()
     elements = _common.components()
     frame = walls.target_arc_frame(elements)
-    coefficients = load_coefficients()
-    ripple = neoclassical.load_ripple()
     print(f"{twin.geometry}")
     print(f"{power / 1e6:.0f} MW, carbon fraction {carbon:g}")
 
@@ -288,7 +286,10 @@ def run_exhaust() -> int:
     samples = {"width_m": [], "wetted_m2": [], "peak_w_m2": [], "net_peak_w_m2": []}
     for _ in range(64):
         power_k = power * (1.0 + 0.05 * rng.standard_normal())
-        chi_k = max(chi_edge * (1.0 + 0.5 * rng.standard_normal()), 0.05)
+        chi_k = max(
+            chi_edge * (1.0 + chi_measured.relative_uncertainty * rng.standard_normal()),
+            0.05,
+        )
         carbon_k = max(carbon * (1.0 + charge_spread * rng.standard_normal()), 0.0)
         crossing_k = max(power_k - float(balance.radiated_power_w), 1.0e5)
         try:
@@ -362,12 +363,11 @@ def run_exhaust() -> int:
     )
 
     print()
-    header = (
-        f"{'n_u [m^-3]':>11s} {'T_u [eV]':>9s} {'T_t [eV]':>9s} {'n_t [m^-3]':>11s} "
-        f"{'q_target':>10s} {'regime':>18s}"
+    layout = _common.Table(
+        ("n_u [m^-3]", "11.2e"), ("T_u [eV]", "9.1f"), ("T_t [eV]", "9.2f"),
+        ("n_t [m^-3]", "11.2e"), ("q_target", ">10s"), ("regime", ">18s"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     rows = []
     for upstream in UPSTREAM_DENSITIES:
         solution = edge.solve_two_point(
@@ -387,10 +387,10 @@ def run_exhaust() -> int:
                 "regime": regime,
             }
         )
-        print(
-            f"{upstream:11.2e} {solution.upstream_temperature_ev:9.1f} "
-            f"{solution.target_temperature_ev:9.2f} {solution.target_density_m3:11.2e} "
-            f"{target_flux / 1e6:9.3f}M {regime:>18s}"
+        layout.row(
+            upstream, solution.upstream_temperature_ev,
+            solution.target_temperature_ev, solution.target_density_m3,
+            f"{target_flux / 1e6:9.3f}M", regime,
         )
 
     # The design angle is an upper bound, not a single value, and the strike line does not
@@ -399,12 +399,12 @@ def run_exhaust() -> int:
     # two-point model only through the parallel flux.
     print()
     print("the same solve against the incidence angle, at the reference upstream density")
-    header = (
-        f"{'alpha [deg]':>12s} {'sin alpha':>10s} {'q_par':>10s} {'width [mm]':>9s} "
-        f"{'T_u [eV]':>9s} {'T_t [eV]':>9s} {'regime':>18s}"
+    layout = _common.Table(
+        ("alpha [deg]", "12.2f"), ("sin alpha", "10.4f"), ("q_par", ">10s"),
+        ("width [mm]", "9.1f"), ("T_u [eV]", "9.1f"), ("T_t [eV]", "9.2f"),
+        ("regime", ">18s"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     incidence_rows = []
     for degrees in (1.0, 2.0, 3.0, 5.0, 10.0, np.degrees(np.arcsin(swept))):
         sine = float(np.sin(np.radians(degrees)))
@@ -431,22 +431,21 @@ def run_exhaust() -> int:
                 "regime": regime,
             }
         )
-        print(
-            f"{degrees:12.2f} {sine:10.4f} {crossing / area / sine / 1e6:9.1f}M "
-            f"{1e3 * width:9.1f} {solution.upstream_temperature_ev:9.1f} "
-            f"{solution.target_temperature_ev:9.2f} {regime:>18s}"
+        layout.row(
+            degrees, sine, f"{crossing / area / sine / 1e6:9.1f}M", 1e3 * width,
+            solution.upstream_temperature_ev, solution.target_temperature_ev, regime,
         )
 
     # Detachment: the volumetric power and momentum loss that brings the target below the
     # threshold, and the recycled neutral flux and pressure at each upstream density.
     print()
     print("the volumetric loss detachment needs, and what recycles from the target")
-    header = (
-        f"{'n_u [m^-3]':>11s} {'T_t attached':>13s} {'f_pow':>8s} {'T_t at f':>9s} "
-        f"{'Gamma_t':>11s} {'n_0 bound':>11s} {'p_0 bound':>10s}"
+    layout = _common.Table(
+        ("n_u [m^-3]", "11.2e"), ("T_t attached", "13.2f"), ("f_pow", "8.3f"),
+        ("T_t at f", "9.2f"), ("Gamma_t", "11.2e"), ("n_0 bound", "11.2e"),
+        ("p_0 bound", "10.3f"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     detachment_rows = []
     for upstream in UPSTREAM_DENSITIES:
         attached = edge.solve_two_point(
@@ -474,12 +473,10 @@ def run_exhaust() -> int:
                 "equilibrium_pressure_bound_pa": recycling.equilibrium_pressure_pa,
             }
         )
-        print(
-            f"{upstream:11.2e} {attached.target_temperature_ev:13.2f} "
-            f"{needed:8.3f} {detached.target_temperature_ev:9.2f} "
-            f"{recycling.target_flux_m2_s:11.2e} "
-            f"{recycling.equilibrium_density_m3:11.2e} "
-            f"{recycling.equilibrium_pressure_pa:10.3f}"
+        layout.row(
+            upstream, attached.target_temperature_ev, needed,
+            detached.target_temperature_ev, recycling.target_flux_m2_s,
+            recycling.equilibrium_density_m3, recycling.equilibrium_pressure_pa,
         )
 
     write_record(
@@ -580,13 +577,12 @@ def run_incidence() -> int:
 
     design = programmes.MACHINE_MEASUREMENTS["divertor_incidence_degrees"]
     swept_all, surface_all, per_element = [], [], []
-    header = (
-        f"{'target':38s} {'lines':>5s} {'swept':>8s} {'surface':>9s} "
-        f"{'p5':>7s} {'p95':>7s} {'elements':>9s}"
+    layout = _common.Table(
+        ("target", "38s"), ("lines", "5d"), ("swept", ">8s"), ("surface", ">9s"),
+        ("p5", ">7s"), ("p95", ">7s"), ("elements", "9d"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
 
     for index in wanted:
         on_element = mask & (strikes.component == index)
@@ -614,11 +610,11 @@ def run_incidence() -> int:
         surface_all.append(surface)
         struck_elements = np.unique(surface_frame["element"])
         summary = summarise(surface)
-        print(
-            f"{elements[index].name:38s} {int(on_element.sum()):5d} "
-            f"{np.degrees(np.arcsin(np.median(swept))):7.2f}° "
-            f"{summary['median']:8.2f}° {summary['p5']:6.2f}° {summary['p95']:6.2f}° "
-            f"{len(struck_elements):9d}"
+        layout.row(
+            elements[index].name, int(on_element.sum()),
+            f"{np.degrees(np.arcsin(np.median(swept))):7.2f}°",
+            f"{summary['median']:8.2f}°", f"{summary['p5']:6.2f}°",
+            f"{summary['p95']:6.2f}°", len(struck_elements),
         )
 
         for cut in struck_elements:
@@ -685,12 +681,11 @@ def run_incidence() -> int:
         return edge.wetted_area(strikes, elements, frame, weights)["area_m2"]
 
     print()
-    header = (
-        f"{'incidence from':16s} {'angle':>7s} {'q_par':>10s} {'width':>7s} "
-        f"{'area':>7s} {'T_t':>8s} {'q_target':>9s}"
+    layout = _common.Table(
+        ("incidence from", "16s"), ("angle", ">7s"), ("q_par", "10.1f"),
+        ("width", ">10s"), ("area", "6.3f"), ("T_t", ">10s"), ("q_target", "8.2f"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     closed = {}
     for label, sine in (
         ("swept contour", float(np.median(swept_sine))),
@@ -702,11 +697,10 @@ def run_incidence() -> int:
         )
         closed[label] = solution
         parallel = crossing / solution["area_m2"] / sine
-        print(
-            f"{label:16s} {np.degrees(np.arcsin(sine)):6.2f}° "
-            f"{parallel / 1e6:9.1f} {1e3 * solution['width_m']:6.1f} mm "
-            f"{solution['area_m2']:6.3f} {solution['target_temperature_ev']:7.2f} eV "
-            f"{parallel * sine / 1e6:8.2f}"
+        layout.row(
+            label, f"{np.degrees(np.arcsin(sine)):6.2f}°", parallel / 1e6,
+            f"{1e3 * solution['width_m']:6.1f} mm", solution["area_m2"],
+            f"{solution['target_temperature_ev']:7.2f} eV", parallel * sine / 1e6,
         )
 
     write_record(
@@ -823,31 +817,34 @@ def run_strikes() -> int:
     )
 
     print()
-    header = f"{'element':34s} {'lines':>6s} {'median L_c':>11s} {'longest':>10s}"
-    print(header)
-    print("-" * len(header))
+    layout = _common.Table(
+        ("element", "34s"), ("lines", "6d"), ("median L_c", ">12s"), ("longest", ">11s"),
+    )
+    layout.begin()
     for name, lengths in sorted(
         element_lengths.items(), key=lambda item: -len(item[1])
     ):
-        print(
-            f"{name:34s} {len(lengths):6d} {np.median(lengths):10.1f} m "
-            f"{max(lengths):9.1f} m"
+        layout.row(
+            name, len(lengths), f"{np.median(lengths):10.1f} m", f"{max(lengths):9.1f} m"
         )
 
     print()
     print("per divertor unit, module x upper or lower")
     elements_seen = sorted({name for name, _, _ in tallies})
-    header = f"{'element':34s} " + "".join(
-        f"{f'{m}{u}':>5s}" for m in range(1, NUM_FIELD_PERIODS + 1) for u in "ul"
+    layout = _common.Table(
+        ("element", "34s"),
+        *((f"{m}{u}", "5d") for m in range(1, NUM_FIELD_PERIODS + 1) for u in "ul"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for name in elements_seen:
-        row = f"{name:34s} "
-        for module in range(1, NUM_FIELD_PERIODS + 1):
-            for unit in ("upper", "lower"):
-                row += f"{tallies.get((name, module, unit), 0):5d}"
-        print(row)
+        layout.row(
+            name,
+            *(
+                tallies.get((name, module, unit), 0)
+                for module in range(1, NUM_FIELD_PERIODS + 1)
+                for unit in ("upper", "lower")
+            ),
+        )
 
     # The symmetry test: module-summed counts, which must agree when the field is
     # five-fold periodic and need not when a trim coil breaks it.
@@ -1044,13 +1041,13 @@ def run_migration() -> int:
         )
 
     print()
-    header = (
-        f"{'<beta> [%]':>10s} {'I_boot [kA]':>12s} {'iota_edge':>10s} "
-        f"{'mean [m]':>9s} {'inner':>8s} {'outer':>8s} "
-        f"{'mean shift':>11s} {'inner shift':>12s} {'floor':>8s} {'lines':>6s}"
+    layout = _common.Table(
+        ("<beta> [%]", "10.3f"), ("I_boot [kA]", "12.2f"), ("iota_edge", "10.5f"),
+        ("mean [m]", "9.4f"), ("inner", "8.4f"), ("outer", "8.4f"),
+        ("mean shift", ">12s"), ("inner shift", ">13s"), ("floor", ">9s"),
+        ("lines", "6d"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     base = rows[0]
     for row in rows:
         mean = row.get("mean_arc_m")
@@ -1059,15 +1056,14 @@ def run_migration() -> int:
         inner_shift = (
             1e3 * (inner - base["inner_arc_m"]) if inner is not None else float("nan")
         )
-        print(
-            f"{100 * row['beta']:10.3f} {row['bootstrap_current_a'] / 1e3:12.2f} "
-            f"{row['iota_edge']:10.5f} "
-            f"{mean if mean is not None else float('nan'):9.4f} "
-            f"{inner if inner is not None else float('nan'):8.4f} "
-            f"{row.get('outer_arc_m', float('nan')):8.4f} "
-            f"{shift:9.1f} mm {inner_shift:10.1f} mm "
-            f"{1e3 * row.get('resolution_floor_m', float('nan')):6.1f} mm "
-            f"{row.get('lines', 0):6d}"
+        layout.row(
+            100 * row["beta"], row["bootstrap_current_a"] / 1e3, row["iota_edge"],
+            mean if mean is not None else float("nan"),
+            inner if inner is not None else float("nan"),
+            row.get("outer_arc_m", float("nan")),
+            f"{shift:9.1f} mm", f"{inner_shift:10.1f} mm",
+            f"{1e3 * row.get('resolution_floor_m', float('nan')):6.1f} mm",
+            row.get("lines", 0),
         )
 
     write_record(
@@ -1104,13 +1100,13 @@ def run_recycling() -> int:
         f"{parallel / 1e6:.1f} MW/m2 parallel, over {connection:.0f} m"
     )
 
-    header = (
-        f"{'n_u [m^-3]':>11s} {'T_t [eV]':>9s} {'Gamma_t':>11s} {'mfp [mm]':>9s} "
-        f"{'n_0 [m^-3]':>11s} {'p_0 [mPa]':>10s} {'f_mom':>7s}"
+    layout = _common.Table(
+        ("n_u [m^-3]", "11.2e"), ("T_t [eV]", "9.2f"), ("Gamma_t", "11.3e"),
+        ("mfp [mm]", "9.2f"), ("n_0 [m^-3]", "11.3e"), ("p_0 [mPa]", "10.3f"),
+        ("f_mom", "7.3f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    layout.begin()
 
     rows = []
     for density in UPSTREAM:
@@ -1135,10 +1131,10 @@ def run_recycling() -> int:
                 "momentum_loss": layer.momentum_loss,
             }
         )
-        print(
-            f"{density:11.2e} {solution.target_temperature_ev:9.2f} {flux:11.3e} "
-            f"{1e3 * layer.mean_free_path_m:9.2f} {layer.neutral_density_m3:11.3e} "
-            f"{layer.pressure_mpa:10.3f} {layer.momentum_loss:7.3f}"
+        layout.row(
+            density, solution.target_temperature_ev, flux,
+            1e3 * layer.mean_free_path_m, layer.neutral_density_m3,
+            layer.pressure_mpa, layer.momentum_loss,
         )
 
     # Momentum loss alone raises the target temperature: it thins the target plasma, and a
@@ -1146,12 +1142,11 @@ def run_recycling() -> int:
     # target is the power the neutrals take with them, and every ionisation costs the
     # potential plus the line radiation that precedes it.
     print()
-    header = (
-        f"{'n_u [m^-3]':>11s} {'T_t [eV]':>9s} {'f_pow':>7s} {'f_mom':>7s} "
-        f"{'T_t with both':>14s}"
+    layout = _common.Table(
+        ("n_u [m^-3]", "11.2e"), ("T_t [eV]", "9.2f"), ("f_pow", "7.3f"),
+        ("f_mom", "7.3f"), ("T_t with both", "14.2f"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     for row in rows:
         cost = COST_PER_IONISATION_EV * edge.ELEMENTARY_CHARGE
         power_loss = min(row["target_flux_m2_s"] * cost / parallel, 0.95)
@@ -1162,10 +1157,9 @@ def run_recycling() -> int:
         )
         row["power_loss"] = power_loss
         row["target_temperature_with_losses_ev"] = detached.target_temperature_ev
-        print(
-            f"{row['upstream_density_m3']:11.2e} {row['target_temperature_ev']:9.2f} "
-            f"{power_loss:7.3f} {row['momentum_loss']:7.3f} "
-            f"{detached.target_temperature_ev:14.2f}"
+        layout.row(
+            row["upstream_density_m3"], row["target_temperature_ev"], power_loss,
+            row["momentum_loss"], detached.target_temperature_ev,
         )
 
     write_record(
@@ -1179,5 +1173,6 @@ def run_recycling() -> int:
             "wetted_area_m2": area,
             "cases": rows,
         },
+        reads=(EXHAUST_OUT,),
     )
     return 0

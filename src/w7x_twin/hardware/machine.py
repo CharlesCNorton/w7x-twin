@@ -7,8 +7,12 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from w7x_twin.mhd.equilibrium import Resolution, Twin
 
 # -- from machine ------------------------------------------------------------------
 
@@ -436,11 +440,9 @@ def edge_transform(
     resolution: "Resolution | None" = None,
 ) -> float:
     """Edge rotational transform for the given modular and planar currents."""
-    from w7x_twin.mhd import diagnostics
-    from w7x_twin.mhd.equilibrium import MachineState, SCAN, Twin
+    from w7x_twin.mhd.equilibrium import MachineState, SCAN
 
     resolution = resolution or SCAN
-
 
     currents = np.array([*modular, planar_current, planar_current], dtype=float)
     state = MachineState(
@@ -463,8 +465,7 @@ def solve_planar_for_edge_transform(
     verbose: bool = True,
 ) -> tuple[float, SolveTrace]:
     """Planar current (both circuits together) giving edge transform ``target``, with the search trace."""
-    from w7x_twin.mhd import diagnostics
-    from w7x_twin.mhd.equilibrium import MachineState, SCAN, Twin
+    from w7x_twin.mhd.equilibrium import SCAN
 
     resolution = resolution or SCAN
 
@@ -526,8 +527,7 @@ def build_divertor_scenarios(
     twin: "Twin", resolution: "Resolution | None" = None, verbose: bool = True
 ) -> dict[str, Configuration]:
     """Solve and register the low, standard and high transform scenarios."""
-    from w7x_twin.mhd import diagnostics
-    from w7x_twin.mhd.equilibrium import MachineState, SCAN, Twin
+    from w7x_twin.mhd.equilibrium import SCAN
 
     resolution = resolution or SCAN
 

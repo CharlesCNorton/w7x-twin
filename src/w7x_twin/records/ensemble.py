@@ -148,6 +148,64 @@ def perturbed_state(
     )
 
 
+def scaled_profiles(profiles, draw: np.ndarray, tolerances: Tolerances):
+    """The kinetic profiles under one draw of the stated tolerances."""
+    return dataclasses.replace(
+        profiles,
+        electron_temperature_axis_ev=profiles.electron_temperature_axis_ev
+        * (1.0 + tolerances.sigma(tolerances.temperature) * draw[8]),
+        ion_temperature_axis_ev=profiles.ion_temperature_axis_ev
+        * (1.0 + tolerances.sigma(tolerances.temperature) * draw[8]),
+        density_axis_m3=profiles.density_axis_m3
+        * (1.0 + tolerances.sigma(tolerances.density) * draw[9]),
+        temperature_exponent=profiles.temperature_exponent
+        * (1.0 + tolerances.sigma(tolerances.temperature_exponent) * draw[10]),
+    )
+
+
+def headline_energy_samples(
+    twin: Twin,
+    power_w: float,
+    profiles,
+    enhancement: float,
+    count: int = 32,
+    tolerances: Tolerances = Tolerances(),
+    resolution: Resolution = SCAN,
+    seed: int = 20260725,
+) -> np.ndarray:
+    """Stored energy of the balance under the stated input tolerances, one per sample.
+
+    The same draw perturbs the currents, flux, profiles and heating power that the
+    interval machinery samples, so a headline stored-energy check carries the interval
+    its stated inputs support."""
+    from w7x_twin.plasma import transport as plasma_transport
+
+    draws, actual = normal_samples(count, seed)
+    out: list[float] = []
+    for index in range(actual):
+        draw = draws[index]
+        scaled = scaled_profiles(profiles, draw, tolerances)
+        knots_s, knots_p = scaled.pressure_spline()
+        state = perturbed_state(
+            twin, "standard", draw, tolerances,
+            Scenario.from_pressure_spline(knots_s, knots_p), f"headline {index}",
+        )
+        try:
+            output = twin.solve(state, resolution, cache=False)
+            balance = plasma_transport.solve(
+                output, scaled,
+                heating=plasma_transport.Heating(
+                    power_w=power_w
+                    * (1.0 + tolerances.sigma(tolerances.heating_power) * draw[12])
+                ),
+                model=plasma_transport.TransportModel(renormalisation=enhancement),
+            )
+        except (RuntimeError, ValueError):
+            continue
+        out.append(float(balance.stored_energy_j))
+    return np.array(out)
+
+
 def run(
     twin: Twin,
     configuration: str = "standard",
@@ -170,17 +228,7 @@ def run(
         draw = draws[index]
         scenario = None
         if profiles is not None:
-            scaled = dataclasses.replace(
-                profiles,
-                electron_temperature_axis_ev=profiles.electron_temperature_axis_ev
-                * (1.0 + tolerances.sigma(tolerances.temperature) * draw[8]),
-                ion_temperature_axis_ev=profiles.ion_temperature_axis_ev
-                * (1.0 + tolerances.sigma(tolerances.temperature) * draw[8]),
-                density_axis_m3=profiles.density_axis_m3
-                * (1.0 + tolerances.sigma(tolerances.density) * draw[9]),
-                temperature_exponent=profiles.temperature_exponent
-                * (1.0 + tolerances.sigma(tolerances.temperature_exponent) * draw[10]),
-            )
+            scaled = scaled_profiles(profiles, draw, tolerances)
             knots_s, knots_p = scaled.pressure_spline()
             scenario = Scenario.from_pressure_spline(knots_s, knots_p)
         state = perturbed_state(

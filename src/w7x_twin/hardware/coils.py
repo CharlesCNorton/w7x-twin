@@ -6,7 +6,7 @@ import dataclasses
 import numpy as np
 from pathlib import Path
 from w7x_twin.hardware.machine import NUM_FIELD_PERIODS
-from w7x_twin.hardware.machine import _COILS_START, CoilSet, load_coils
+from w7x_twin.hardware.machine import _COILS_START, load_coils
 from w7x_twin.hardware.walls import Vessel
 
 
