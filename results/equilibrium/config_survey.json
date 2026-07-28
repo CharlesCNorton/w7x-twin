@@ -1,12 +1,13 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "configurations": {
     "high_mirror_ref167": {
@@ -46,7 +47,8 @@
       "net_toroidal_current_a": 1.1384122811097797e-10,
       "magnetic_well_depth": 0.007605974258198003,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "narrow_mirror": {
       "label": "Narrow mirror",
@@ -85,7 +87,8 @@
       "net_toroidal_current_a": 5.887217796596289e-10,
       "magnetic_well_depth": 0.00847860668886749,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "op12a_0ka_mimic": {
       "label": "OP1.2a 0 kA mimic (EES+252)",
@@ -126,7 +129,8 @@
       "net_toroidal_current_a": 2.40692882291782e-10,
       "magnetic_well_depth": 0.009922497639454275,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "op12a_11ka_mimic": {
       "label": "OP1.2a 11 kA mimic (EFS+252)",
@@ -167,7 +171,8 @@
       "net_toroidal_current_a": 1.2853216754815655e-09,
       "magnetic_well_depth": 0.010500291950920448,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "op12a_22ka_mimic": {
       "label": "OP1.2a 22 kA mimic (EGS+252)",
@@ -208,7 +213,8 @@
       "net_toroidal_current_a": 6.619054263024005e-10,
       "magnetic_well_depth": 0.011123321138022009,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "op12a_32ka_mimic": {
       "label": "OP1.2a 32 kA mimic (EGS001+252)",
@@ -249,7 +255,8 @@
       "net_toroidal_current_a": 4.488596994089988e-10,
       "magnetic_well_depth": 0.01176017325815907,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "op12a_43ka_mimic": {
       "label": "OP1.2a 43 kA mimic (FHS+252)",
@@ -288,7 +295,8 @@
       "net_toroidal_current_a": 8.15862134795342e-10,
       "magnetic_well_depth": 0.012435786884835162,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "op2_22ka": {
       "label": "OP2 reference, 22 kA",
@@ -329,7 +337,8 @@
       "net_toroidal_current_a": -3.8272336688738307e-10,
       "magnetic_well_depth": 0.009648359493007784,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     },
     "standard": {
       "label": "Standard (EIM-type)",
@@ -368,7 +377,8 @@
       "net_toroidal_current_a": -7.806255641895632e-11,
       "magnetic_well_depth": 0.010133237557887998,
       "mercier_unstable_fraction": NaN,
-      "axis_shift_m": 0.0
+      "axis_shift_m": 0.0,
+      "axis_shift_in_boundary_m": 0.0
     }
   }
 }

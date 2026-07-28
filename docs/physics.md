@@ -1335,15 +1335,15 @@ a mean free path, so the neutral density is the flux divided by that speed.
 
 | n_u | T_t | Mean free path | Neutral density | Pressure | f_pow | f_mom | T_t with both |
 |---|---|---|---|---|---|---|---|
-| 5 × 10¹⁸ m⁻³ | 192.6 eV | 67.2 mm | 2.09 × 10¹⁹ m⁻³ | 87 mPa | 0.022 | 0.281 | 240.0 eV |
-| 1 × 10¹⁹ m⁻³ | 106.2 eV | 41.9 mm | 3.80 × 10¹⁹ m⁻³ | 157 mPa | 0.040 | 0.330 | 148.5 eV |
-| 2 × 10¹⁹ m⁻³ | 36.1 eV | 20.5 mm | 1.12 × 10²⁰ m⁻³ | 463 mPa | 0.119 | 0.464 | 83.8 eV |
-| 4 × 10¹⁹ m⁻³ | 9.1 eV | 18.4 mm | 4.43 × 10²⁰ m⁻³ | 1.84 Pa | 0.471 | 0.798 | 59.2 eV |
-| 8 × 10¹⁹ m⁻³ | 2.3 eV | 474.3 mm | 1.77 × 10²¹ m⁻³ | 7.34 Pa | 0.950 | 0.998 | 2.3 eV |
+| 5 × 10¹⁸ m⁻³ | 184.7 eV | 70.0 mm | 2.02 × 10¹⁹ m⁻³ | 84 mPa | 0.023 | 0.284 | 229.6 eV |
+| 1 × 10¹⁹ m⁻³ | 106.3 eV | 45.2 mm | 3.52 × 10¹⁹ m⁻³ | 146 mPa | 0.040 | 0.329 | 144.1 eV |
+| 2 × 10¹⁹ m⁻³ | 41.2 eV | 23.8 mm | 9.06 × 10¹⁹ m⁻³ | 375 mPa | 0.104 | 0.442 | 84.5 eV |
+| 4 × 10¹⁹ m⁻³ | 10.6 eV | 18.5 mm | 3.54 × 10²⁰ m⁻³ | 1.46 Pa | 0.405 | 0.754 | 57.3 eV |
+| 8 × 10¹⁹ m⁻³ | 2.6 eV | 254.8 mm | 1.41 × 10²¹ m⁻³ | 5.86 Pa | 0.950 | 0.995 | 2.6 eV |
 
 The mean free path falls with density until the target cools below the ionisation threshold and
-then jumps to half a metre, which is the detachment signature: a cold target does not ionise,
-so the neutrals cross it. The two losses come from the same coefficients, charge exchange
+then jumps to a quarter of a metre, which is the detachment signature: a cold target does not
+ionise, so the neutrals cross it. The two losses come from the same coefficients, charge exchange
 taking the momentum and each ionisation costing 30 eV of power, and only the power loss brings
 the target down. Momentum loss on its own raises it, because thinning the target plasma leaves
 a higher temperature carrying the same sheath flux.
