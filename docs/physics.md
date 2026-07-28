@@ -56,6 +56,19 @@ Beam power is attenuated along its own path by the line-integrated density, abso
 species, and the critical energy runs 103.6 keV on axis to 3.0 keV at the edge, so 87.5 % of
 the beam power reaches the ions on axis and 10.5 % at the edge.
 
+The born ions are followed as guiding centres in the traced field until they strike the
+vessel or two milliseconds pass: dX/dt = v∥b̂ + b̂ × (μ∇|B| + m v∥² κ)/(qB) with the exact
+gradient of the trilinear interpolant, the equation set BEAMS3D integrates. Of 512 ions
+sampled from the beam deposition at full injection energy on the counter-injected pitch band
+0.4 to 0.8, none reaches the vessel, and the surviving orbits conserve their energy to a
+median 3.7 × 10⁻³ over the following. The validated slowing-down chain puts 11 % of the born
+power on the wall for a comparable discharge, and the record carries that figure beside the
+model's zero as outside its band: the published number integrates pitch-angle scattering over
+the ~30 ms slowing time, which feeds the trapped cone the aimed passing band excludes, so
+what the model measures is the prompt collisionless loss of the injected population — the
+floor the scattering builds on — rather than the total. Record
+`results/plasma/deposition.json`.
+
 ## Stability beyond the Mercier criterion
 
 `diagnostics.py` adds the ballooning limit, the tearing index, the resistive interchange

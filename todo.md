@@ -13,9 +13,8 @@
 11. Regenerate the profile-residual, computed-balance and turbulence-dependent discharge records once the computed transport channels are calibrated.
 12. Propagate the stated input tolerances through the headline comparisons with the ensemble machinery.
 13. Extend the saturation response, the drift-kinetic scan and the stepped-pressure solves to the remaining configurations of the library.
-14. Carry fast-ion orbit losses in the beam deposition.
-15. Resolve the scrape-off layer with a three-dimensional edge transport model carrying neutrals and impurities beyond the two-point and Lengyel chain.
-16. Replace the reconstructed trim and control coil paths with the measured ones from IPP's coil database.
-17. Obtain the as-built coil filaments from IPP's coil database and substitute them for the as-designed set.
-18. Reproduce discharges whose parameters the publications do not state in numbers, from the machine's archived waveforms.
-19. Calibrate against archived waveforms and measured profiles, benchmark against reconstructed equilibria, validate forward-modelled diagnostic signals against archived ones, and predict a withheld campaign.
+14. Resolve the scrape-off layer with a three-dimensional edge transport model carrying neutrals and impurities beyond the two-point and Lengyel chain.
+15. Replace the reconstructed trim and control coil paths with the measured ones from IPP's coil database.
+16. Obtain the as-built coil filaments from IPP's coil database and substitute them for the as-designed set.
+17. Reproduce discharges whose parameters the publications do not state in numbers, from the machine's archived waveforms.
+18. Calibrate against archived waveforms and measured profiles, benchmark against reconstructed equilibria, validate forward-modelled diagnostic signals against archived ones, and predict a withheld campaign.
