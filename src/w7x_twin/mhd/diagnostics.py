@@ -57,6 +57,7 @@ class Diagnostics:
     net_toroidal_current_a: float
     magnetic_well_depth: float
     mercier_unstable_fraction: float
+    resistive_interchange_unstable_fraction: float
 
     # Shape response
     axis_shift_m: float
@@ -165,6 +166,13 @@ def analyse(
         if has_pressure and interior.size
         else float("nan")
     )
+    resistive = resistive_interchange(output.mercier).d_r[1:-1]
+    resistive = resistive[np.isfinite(resistive)]
+    resistive_unstable = (
+        float(np.count_nonzero(resistive < 0.0) / resistive.size)
+        if has_pressure and resistive.size
+        else float("nan")
+    )
 
     b_max = float(np.max(b_axis_profile))
     b_min = float(np.min(b_axis_profile))
@@ -200,6 +208,7 @@ def analyse(
         net_toroidal_current_a=float(wout.ctor),
         magnetic_well_depth=magnetic_well_depth(wout),
         mercier_unstable_fraction=unstable,
+        resistive_interchange_unstable_fraction=resistive_unstable,
         axis_shift_m=shift,
         axis_shift_in_boundary_m=internal,
     )
@@ -388,6 +397,74 @@ def resonances_in(
             if low <= n / m <= high:
                 out.append((m, n))
     return sorted(set(out))
+
+
+@dataclasses.dataclass
+class ResistiveInterchange:
+    """Glasser-Greene-Johnson resistive interchange, in VMEC's stable-positive convention."""
+
+    s: np.ndarray
+    #: D_R per surface; negative is resistive-interchange unstable, NaN where shearless.
+    d_r: np.ndarray
+    #: Geodesic cross term H = -Dcurr / (d iota/d Phi)^2 of the same normalisation.
+    h: np.ndarray
+
+    @property
+    def unstable_fraction(self) -> float:
+        finite = self.d_r[1:-1][np.isfinite(self.d_r[1:-1])]
+        return (
+            float(np.count_nonzero(finite < 0.0) / finite.size)
+            if finite.size
+            else float("nan")
+        )
+
+
+def resistive_interchange(mercier) -> ResistiveInterchange:
+    """Resistive interchange D_R from the equilibrium's own Mercier decomposition.
+
+    Glasser, Greene and Johnson [Phys. Fluids 18, 875 (1975)] give the ideal and
+    resistive interchange criteria as D_I = E + F + H^2 - 1/4 and D_R = E + F + H - 1/4,
+    both unstable when positive: the geodesic-curvature cross term enters the resistive
+    layer linearly rather than squared, so magnetic shear does not stabilise the
+    resistive branch the way it does the ideal one. VMEC's DMerc is -D_I times the
+    squared flux shear, its Dshear is that shear factor over four, and its Dcurr is
+    minus the shear times the Pfirsch-Schlueter cross integral, which is H with the
+    surface-averaged parallel current removed; the identity D_R = D_I + H - H^2
+    therefore reads D_R = DMerc + Dcurr + Dcurr^2 / (4 Dshear) in the stable-positive
+    convention, with H = -Dcurr / (4 Dshear). A shearless surface has no GGJ
+    normalisation and returns NaN."""
+    d_merc = np.asarray(mercier.DMerc, dtype=float)
+    d_curr = np.asarray(mercier.Dcurr, dtype=float)
+    d_shear = np.asarray(mercier.Dshear, dtype=float)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        d_r = np.where(
+            d_shear > 0.0, d_merc + d_curr + d_curr**2 / (4.0 * d_shear), np.nan
+        )
+        h = np.where(d_shear > 0.0, -d_curr / (4.0 * d_shear), np.nan)
+    return ResistiveInterchange(s=np.asarray(mercier.s, dtype=float), d_r=d_r, h=h)
+
+
+def tearing_growth_rate(
+    delta_prime_per_m: float,
+    resistivity_ohm_m: float,
+    parallel_wavenumber_gradient_per_m2: float,
+    alfven_speed_m_s: float,
+) -> float:
+    """Tearing-layer growth rate of a positive delta-prime at finite resistivity, in 1/s.
+
+    Furth, Killeen and Rosenbluth [Phys. Fluids 6, 459 (1963)]: the constant-psi
+    tearing mode grows as 0.55 Delta'^(4/5) (eta/mu0)^(3/5) (k_par' v_A)^(2/5), with
+    k_par' the radial gradient of the parallel wavenumber at the resonance. At or
+    below marginal delta-prime the mode does not grow and the rate is zero."""
+    if not np.isfinite(delta_prime_per_m) or delta_prime_per_m <= 0.0:
+        return 0.0
+    return float(
+        0.55
+        * delta_prime_per_m**0.8
+        * (resistivity_ohm_m / VACUUM_PERMEABILITY) ** 0.6
+        * (abs(parallel_wavenumber_gradient_per_m2) * alfven_speed_m_s) ** 0.4
+    )
+
 
 @dataclasses.dataclass
 class GlobalMode:

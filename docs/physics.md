@@ -58,21 +58,43 @@ the beam power reaches the ions on axis and 10.5 % at the edge.
 
 ## Stability beyond the Mercier criterion
 
-`diagnostics.py` adds the ballooning limit and the tearing index to the interchange criterion
-VMEC returns. `python -m w7x_twin stability` runs all three against beta:
+`diagnostics.py` adds the ballooning limit, the tearing index, the resistive interchange
+criterion and the tearing-layer growth rate to the interchange criterion VMEC returns.
+`python -m w7x_twin stability` runs them against beta:
 
-| ⟨β⟩ | Mercier unstable | Ballooning unstable | Max α | Rationals crossed |
-|---|---|---|---|---|
-| 0.50 % | 0.102 | 0.000 | 0.327 | 0 |
-| 1.05 % | 0.061 | 0.314 | 0.694 | 0 |
-| 2.00 % | 0.061 | 0.706 | 1.367 | 0 |
-| 2.99 % | 0.061 | 0.843 | 2.163 | 0 |
+| ⟨β⟩ | Mercier unstable | Resistive interchange | Ballooning unstable | Max α | Rationals crossed |
+|---|---|---|---|---|---|
+| 0.50 % | 0.102 | 0.102 | 0.000 | 0.327 | 0 |
+| 1.05 % | 0.061 | 0.061 | 0.314 | 0.694 | 0 |
+| 2.00 % | 0.061 | 0.061 | 0.706 | 1.367 | 0 |
+| 2.99 % | 0.061 | 0.041 | 0.843 | 2.163 | 0 |
 
 The ballooning drive goes as the pressure gradient and the shear that holds it does not move
 with beta, so the unstable fraction runs from nothing at half a percent to 0.843 at three. The
 transform spans 0.85 to 0.96 and crosses no rational of order six or below, which is why the
 island chain the divertor uses sits outside the last closed surface rather than inside it, and
-why the tearing index has no resonance to be evaluated at.
+why the tearing index has no resonance to be evaluated at in the standard configuration.
+
+The resistive interchange criterion of Glasser, Greene and Johnson [Phys. Fluids 18, 875
+(1975)] is the ideal one with the geodesic-curvature cross term entering the resistive layer
+linearly rather than squared, D_R = E + F + H − 1/4 against D_I = E + F + H² − 1/4, so
+magnetic shear does not stabilise the resistive branch and a Mercier-stable surface with H
+between zero and one is resistive-interchange unstable anyway. Both follow from the solver's
+own Mercier decomposition: VMEC's DMerc is −D_I times the squared flux shear, its Dcurr is
+minus that shear times the Pfirsch-Schlüter cross integral, and the identity
+D_R = D_I + H − H² reads D_R = DMerc + Dcurr + Dcurr²/(4 Dshear) in the stable-positive
+convention, with H = −Dcurr/(4 Dshear). Across the scan the resistive fraction never exceeds
+the ideal one — 0.041 against 0.061 at three per cent, equal below — so resistivity opens no
+interchange the optimised field had not already closed.
+
+The tearing index does have a resonance on the OP1.2a 22 kA mimic taper, whose transform
+crosses 5/6 at s = 0.258 at its own ⟨β⟩ = 0.93 %. There Δ' = −50.8 m⁻¹: the resonance is
+tearing stable, and the Furth-Killeen-Rosenbluth layer rate
+0.55 Δ'^(4/5) (η/μ₀)^(3/5) (k∥' v_A)^(2/5), evaluated at the plasma's own Spitzer
+resistivity of 1.9 × 10⁻⁸ Ωm, is therefore zero rather than a rate. The record carries the
+resonance's resistivity, wavenumber gradient and Alfvén speed with the index, so a
+configuration whose Δ' comes out positive carries its growth time with it.
+Record `results/equilibrium/stability_limits.json`.
 
 ## A discharge through its waveform
 

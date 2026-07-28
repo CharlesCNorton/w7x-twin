@@ -489,9 +489,9 @@ def run_stability() -> int:
     print(f"{twin.geometry}")
 
     table = Table(
-        ("beta [%]", "9.4f"), ("Mercier", "8.3f"), ("ballooning", "11.3f"),
-        ("max alpha", "10.3f"), ("resonances", "11d"), ("tearing", "8d"),
-        ("global unstable", "16d"),
+        ("beta [%]", "9.4f"), ("Mercier", "8.3f"), ("resistive", "10.3f"),
+        ("H range", ">16s"), ("ballooning", "11.3f"), ("max alpha", "10.3f"),
+        ("resonances", "11d"), ("tearing", "8d"), ("global unstable", "16d"),
     )
     print()
     table.begin()
@@ -520,6 +520,12 @@ def run_stability() -> int:
             s, pressure, transform, analysis.b_axis_t,
             analysis.minor_radius_m, analysis.major_radius_m,
         )
+        # The resistive branch of the same interchange, on the solver's own Mercier
+        # decomposition: shear does not stabilise it, so where H sits against (0, 1)
+        # says whether the resistive criterion is the stricter of the two.
+        resistive = diagnostics.resistive_interchange(output.mercier)
+        h_interior = resistive.h[1:-1][np.isfinite(resistive.h[1:-1])]
+        d_r_interior = resistive.d_r[1:-1][np.isfinite(resistive.d_r[1:-1])]
 
         # Enclosed toroidal current density, from the equilibrium's own profile.
         current = np.asarray(wout.jcuru) if hasattr(wout, "jcuru") else np.zeros(surfaces)
@@ -554,6 +560,17 @@ def run_stability() -> int:
             {
                 "beta": beta,
                 "mercier_unstable_fraction": analysis.mercier_unstable_fraction,
+                "resistive_interchange_unstable_fraction": (
+                    analysis.resistive_interchange_unstable_fraction
+                ),
+                "resistive_d_r_minimum": (
+                    float(np.min(d_r_interior)) if d_r_interior.size else float("nan")
+                ),
+                "geodesic_h_range": (
+                    [float(h_interior.min()), float(h_interior.max())]
+                    if h_interior.size
+                    else [float("nan"), float("nan")]
+                ),
                 "ballooning_unstable_fraction": ballooning.unstable_fraction,
                 "max_alpha": float(np.nanmax(ballooning.alpha)),
                 "resonances": [f"{n}/{m}" for m, n in resonances],
@@ -567,6 +584,10 @@ def run_stability() -> int:
         )
         table.row(
             100 * beta, analysis.mercier_unstable_fraction,
+            analysis.resistive_interchange_unstable_fraction,
+            f"{h_interior.min():7.3f} {h_interior.max():7.3f}"
+            if h_interior.size
+            else "-",
             ballooning.unstable_fraction, float(np.nanmax(ballooning.alpha)),
             len(resonances), len(unstable),
             sum(1 for g in global_list if g.unstable),
@@ -578,9 +599,106 @@ def run_stability() -> int:
         f"fraction runs {rows[0]['ballooning_unstable_fraction']:.3f} to "
         f"{rows[-1]['ballooning_unstable_fraction']:.3f} across the scan"
     )
+    print(
+        "the resistive interchange fraction runs "
+        + ", ".join(
+            f"{r['resistive_interchange_unstable_fraction']:.3f}" for r in rows
+        )
+        + " against Mercier's "
+        + ", ".join(f"{r['mercier_unstable_fraction']:.3f}" for r in rows)
+        + ", so the resistive branch opens nothing the ideal criterion had not"
+    )
 
-    write_record(STABILITY_OUT, {"cases": rows}, geometry=twin.geometry)
+    crossing = tearing_configuration_case(twin)
+
+    write_record(
+        STABILITY_OUT,
+        {"cases": rows, "tearing_configuration": crossing},
+        geometry=twin.geometry,
+    )
     return 0
+
+
+#: Configuration whose transform crosses a low-order rational inside the plasma, so
+#: the tearing index has a resonance to be evaluated at; the standard transform
+#: crosses none.
+TEARING_CONFIGURATION = "op12a_22ka_mimic"
+
+
+def tearing_configuration_case(twin: Twin) -> dict:
+    """Delta-prime and its resistive-layer growth rate on the crossing configuration."""
+    from w7x_twin.plasma import current as plasma_current
+
+    output = twin.solve_profiles(TEARING_CONFIGURATION, kinetics.HIGH_PERFORMANCE)
+    analysis = diagnostics.analyse(output)
+    wout = output.wout
+    surfaces = int(wout.ns)
+    s = np.linspace(0.0, 1.0, surfaces)
+    transform = np.asarray(wout.iotaf)
+    current_density = (
+        np.asarray(wout.jcuru) if hasattr(wout, "jcuru") else np.zeros(surfaces)
+    )
+    resonances = diagnostics.resonances_in(transform)
+    print()
+    print(
+        f"{TEARING_CONFIGURATION} at <beta> {100 * analysis.beta_total:.2f} per cent: "
+        f"transform {transform[0]:.5f} to {transform[-1]:.5f} crosses "
+        + (", ".join(f"{n}/{m}" for m, n in resonances) or "no rational")
+    )
+
+    profiles = kinetics.HIGH_PERFORMANCE
+    density = profiles.density(s)
+    temperature = profiles.electron_temperature(s)
+    resistivity = plasma_current.spitzer_resistivity(temperature, density)
+    radius = analysis.minor_radius_m * np.sqrt(np.clip(s, 1e-12, 1.0))
+    d_iota_d_r = np.gradient(transform, radius)
+    proton_mass = 1.67262192369e-27
+    alfven = analysis.b_axis_t / np.sqrt(
+        diagnostics.VACUUM_PERMEABILITY * density * proton_mass
+    )
+
+    layout = Table(
+        ("resonance", ">9s"), ("s", "7.4f"), ("delta' [1/m]", "13.3f"),
+        ("eta [ohm m]", "12.3e"), ("growth [1/s]", "13.3f"), ("layer time", ">11s"),
+    )
+    layout.begin()
+    entries = []
+    for m, n in resonances:
+        result = diagnostics.tearing_index(
+            s, current_density, transform, m, n, analysis.minor_radius_m
+        )
+        if not np.isfinite(result.s_resonant):
+            continue
+        eta = float(np.interp(result.s_resonant, s, resistivity))
+        wavenumber_gradient = (
+            m
+            * abs(float(np.interp(result.s_resonant, s, d_iota_d_r)))
+            / analysis.major_radius_m
+        )
+        speed = float(np.interp(result.s_resonant, s, alfven))
+        growth = diagnostics.tearing_growth_rate(
+            result.delta_prime_per_m, eta, wavenumber_gradient, speed
+        )
+        entries.append(
+            {
+                "m": m, "n": n, "s_resonant": result.s_resonant,
+                "delta_prime_per_m": result.delta_prime_per_m,
+                "unstable": result.unstable,
+                "resistivity_ohm_m": eta,
+                "parallel_wavenumber_gradient_per_m2": wavenumber_gradient,
+                "alfven_speed_m_s": speed,
+                "growth_rate_per_s": growth,
+            }
+        )
+        layout.row(
+            f"{n}/{m}", result.s_resonant, result.delta_prime_per_m, eta, growth,
+            f"{1.0 / growth:9.3f} s" if growth > 0.0 else "stable",
+        )
+    return {
+        "configuration": TEARING_CONFIGURATION,
+        "beta": float(analysis.beta_total),
+        "resonances": entries,
+    }
 
 
 # -- winding -----------------------------------------------------------------------

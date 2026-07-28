@@ -1176,6 +1176,84 @@ def test_the_global_mode_operator_is_positive_without_a_drive():
         assert not mode.unstable
 
 
+def _mercier_like(d_merc, d_curr, d_shear):
+    import types
+
+    arrays = [np.asarray(a, dtype=float) for a in (d_merc, d_curr, d_shear)]
+    return types.SimpleNamespace(
+        s=np.linspace(0.0, 1.0, len(arrays[0])),
+        DMerc=arrays[0], Dcurr=arrays[1], Dshear=arrays[2],
+    )
+
+
+def test_resistive_interchange_reduces_to_mercier_without_a_cross_term():
+    """With no Pfirsch-Schlueter cross term the two criteria are the same criterion."""
+    from w7x_twin.mhd import diagnostics
+
+    result = diagnostics.resistive_interchange(
+        _mercier_like([0.0, 0.02, 0.01, 0.0], np.zeros(4), np.full(4, 0.5))
+    )
+    assert np.allclose(result.d_r, [0.0, 0.02, 0.01, 0.0])
+    assert np.allclose(result.h, 0.0)
+
+
+def test_resistive_interchange_at_half_h_loses_exactly_the_shear_term():
+    """At H = 1/2 the resistive criterion is Mercier with the shear stabilisation removed."""
+    from w7x_twin.mhd import diagnostics
+
+    d_shear = np.array([0.3, 0.5, 0.8, 0.2])
+    result = diagnostics.resistive_interchange(
+        _mercier_like(np.full(4, 0.1), -2.0 * d_shear, d_shear)
+    )
+    assert np.allclose(result.h, 0.5)
+    assert np.allclose(result.d_r, 0.1 - d_shear)
+
+
+def test_resistive_interchange_is_stricter_exactly_inside_the_ggj_window():
+    """D_R falls below DMerc for 0 < H < 1 and not outside, since D_R - D_I = H - H^2."""
+    from w7x_twin.mhd import diagnostics
+
+    d_shear = np.full(5, 0.25)
+    h = np.array([-0.5, 0.0, 0.5, 1.0, 1.5])
+    result = diagnostics.resistive_interchange(
+        _mercier_like(np.zeros(5), -4.0 * d_shear * h, d_shear)
+    )
+    assert np.allclose(result.h, h)
+    assert result.d_r[2] < 0.0
+    assert result.d_r[0] > 0.0 and result.d_r[4] > 0.0
+    assert result.d_r[1] == pytest.approx(0.0) and result.d_r[3] == pytest.approx(0.0)
+
+
+def test_resistive_interchange_has_no_answer_on_a_shearless_surface():
+    from w7x_twin.mhd import diagnostics
+
+    result = diagnostics.resistive_interchange(
+        _mercier_like([0.1, 0.1], [0.01, 0.01], [0.5, 0.0])
+    )
+    assert np.isfinite(result.d_r[0])
+    assert np.isnan(result.d_r[1]) and np.isnan(result.h[1])
+
+
+def test_tearing_growth_carries_the_fkr_exponents():
+    """gamma scales as delta'^(4/5), eta^(3/5) and (k' v_A)^(2/5), and marginal is quiet."""
+    from w7x_twin.mhd import diagnostics
+
+    base = diagnostics.tearing_growth_rate(2.0, 1e-7, 0.5, 4e6)
+    assert base > 0.0
+    assert diagnostics.tearing_growth_rate(4.0, 1e-7, 0.5, 4e6) == pytest.approx(
+        base * 2.0**0.8
+    )
+    assert diagnostics.tearing_growth_rate(2.0, 2e-7, 0.5, 4e6) == pytest.approx(
+        base * 2.0**0.6
+    )
+    assert diagnostics.tearing_growth_rate(2.0, 1e-7, 1.0, 4e6) == pytest.approx(
+        base * 2.0**0.4
+    )
+    assert diagnostics.tearing_growth_rate(0.0, 1e-7, 0.5, 4e6) == 0.0
+    assert diagnostics.tearing_growth_rate(-3.0, 1e-7, 0.5, 4e6) == 0.0
+    assert diagnostics.tearing_growth_rate(float("nan"), 1e-7, 0.5, 4e6) == 0.0
+
+
 def test_a_well_stabilises_the_global_mode_and_a_hill_destabilises_it():
     """The drive must reach the eigenvalue, with the sign the package already uses."""
     from w7x_twin.mhd import diagnostics
