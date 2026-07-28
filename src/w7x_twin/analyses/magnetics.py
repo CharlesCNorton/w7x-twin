@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import json
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
-from w7x_twin.hardware import machine, walls
+from w7x_twin.analyses import _common
+from w7x_twin.hardware import machine
 from w7x_twin.magnetics import field, fieldlines, plasma_response
 from w7x_twin.mhd import diagnostics
-from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
 from w7x_twin.plasma import current as plasma_current, kinetics, neoclassical
 
 
@@ -43,7 +41,7 @@ RESONANCE = (5, 5)
 def panel_width(equilibrium, num_theta: int, num_zeta: int) -> float:
     """Largest side of one boundary panel, in metres."""
     wout = equilibrium.wout
-    r, z = diagnostics.flux_surface(wout, int(wout.ns) - 1, 0.0, num_theta)
+    r, z = diagnostics.boundary_cut(wout, 0.0, num_theta)
     poloidal = float(np.sum(np.hypot(np.diff(r), np.diff(z)))) / num_theta
     toroidal = 2.0 * np.pi * float(wout.Rmajor_p) / num_zeta
     return max(poloidal, toroidal)
@@ -51,9 +49,7 @@ def panel_width(equilibrium, num_theta: int, num_zeta: int) -> float:
 
 def probe_points(equilibrium, r_axis: float, z_axis: float) -> tuple[np.ndarray, list[str]]:
     """Probe points on the axis, just outside the boundary and in the island region."""
-    r_lcfs, z_lcfs = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0, 128
-    )
+    r_lcfs, z_lcfs = diagnostics.boundary_cut(equilibrium.wout, 0.0, 128)
     outboard = int(np.argmax(r_lcfs))
     inboard = int(np.argmin(r_lcfs))
     half_width = float(r_lcfs.max()) - r_axis
@@ -78,34 +74,20 @@ def probe_points(equilibrium, r_axis: float, z_axis: float) -> tuple[np.ndarray,
 
 
 def island_width(section, r_axis: float, z_axis: float, resonance) -> dict:
-    """Radial extent of the island chain on the midplane of a Poincare section.
-    Width is the largest per-line radial span of traced points at the outboard midplane."""
-    r, z = section.r, section.z
-    near = np.abs(z - z_axis) < 0.02
-    if not near.any():
-        return {"width_m": float("nan"), "lines": 0}
-    outboard = near & (r > r_axis)
-    if not outboard.any():
-        return {"width_m": float("nan"), "lines": 0}
-    lines = np.unique(section.line_index[outboard])
-    spans = []
-    for line in lines:
-        here = outboard & (section.line_index == line)
-        if int(here.sum()) < 4:
-            continue
-        spans.append(float(r[here].max() - r[here].min()))
-    if not spans:
+    """Radial extent of the island chain on the midplane of a Poincare section."""
+    width, lines = fieldlines.midplane_island_span(section, r_axis, z_axis)
+    if lines == 0:
         return {"width_m": float("nan"), "lines": 0}
     return {
-        "width_m": float(np.max(spans)),
-        "lines": int(len(spans)),
+        "width_m": width,
+        "lines": lines,
         "resonance": f"{resonance[0]}/{resonance[1]}",
     }
 
 
 def run_response() -> int:
-    key = sys.argv[1] if len(sys.argv) > 1 else "standard"
-    twin = Twin(verbose=False)
+    key = _common.arg(1, default="standard")
+    twin = _common.twin()
     config = machine.get(key)
     vacuum = field.VacuumField(twin.response, config.as_extcur())
     r_axis, z_axis = fieldlines.find_axis(vacuum)
@@ -116,10 +98,7 @@ def run_response() -> int:
     coefficients = neoclassical.discover_monoenergetic_profile(
         Path(neoclassical.RADIAL_SCANS[0])
     )
-    stored = np.load(neoclassical.RIPPLE_TABLE)
-    ripple = neoclassical.EffectiveRipple(
-        s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-    )
+    ripple = neoclassical.load_ripple()
     solution = plasma_current.solve_self_consistent(
         twin, key, profiles, verbose=False,
         target="drift_kinetic" if coefficients is not None else "redl",
@@ -182,9 +161,7 @@ def run_response() -> int:
     print(header)
     print("-" * len(header))
     finest = panel_width(equilibrium, *SHEET_SAMPLINGS[-1])
-    contour_r, contour_z = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0, 512
-    )
+    contour_r, contour_z = diagnostics.boundary_cut(equilibrium.wout, 0.0, 512)
     exterior = ~plasma_response.inside_boundary(
         equilibrium,
         np.hypot(points[:, 0], points[:, 1]),
@@ -271,15 +248,11 @@ def run_response() -> int:
         distribution, twin.coils.grid, interpreter=GPU_PYTHON, verbose=True
     )
     shape = (vacuum.num_phi, vacuum.num_z, vacuum.num_r)
-    total = object.__new__(field.VacuumField)
-    total.__dict__.update(vacuum.__dict__)
-    total.b_r = vacuum.b_r + parts[0].reshape(shape)
-    total.b_phi = vacuum.b_phi + parts[1].reshape(shape)
-    total.b_z = vacuum.b_z + parts[2].reshape(shape)
-
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
+    total = vacuum.with_added_field(
+        parts[0].reshape(shape), parts[1].reshape(shape), parts[2].reshape(shape)
     )
+
+    r_lcfs, _ = diagnostics.boundary_cut(equilibrium.wout, 0.0)
     half_width = float(r_lcfs.max()) - r_axis
     starts = r_axis + np.linspace(*LAYER, NUM_LINES) * half_width
     islands = {}
@@ -300,25 +273,21 @@ def run_response() -> int:
         f"an island statement no longer rests on the vacuum field alone"
     )
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": key,
-                "beta": float(equilibrium.wout.betatotal),
-                "toroidal_current_a": float(equilibrium.wout.ctor),
-                "sheet_current_a": sheet.net_current_a(),
-                "samplings": [list(s) for s in record.samplings],
-                "sources": record.sources,
-                "sheet_samplings": [list(s) for s in SHEET_SAMPLINGS],
-                "sheet_changes_t": sheet_changes,
-                "panel_width_m": finest,
-                "points": rows,
-                "islands": islands,
-            },
-            indent=2,
-        )
+    _common.write_record(
+        OUT,
+        {
+            "configuration": key,
+            "beta": float(equilibrium.wout.betatotal),
+            "toroidal_current_a": float(equilibrium.wout.ctor),
+            "sheet_current_a": sheet.net_current_a(),
+            "samplings": [list(s) for s in record.samplings],
+            "sources": record.sources,
+            "sheet_samplings": [list(s) for s in SHEET_SAMPLINGS],
+            "sheet_changes_t": sheet_changes,
+            "panel_width_m": finest,
+            "points": rows,
+            "islands": islands,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {OUT}")
     return 0

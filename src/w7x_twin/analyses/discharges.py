@@ -4,18 +4,19 @@ from __future__ import annotations
 
 import dataclasses
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
 
+from w7x_twin.analyses import _common
+from w7x_twin.analyses._common import arg, args, write_record
 from w7x_twin.hardware import coils as coil_geometry, machine, walls
-from w7x_twin.hardware.walls import load_vessel
 from w7x_twin.magnetics import field, fieldlines
 from w7x_twin.magnetics.field import VacuumField
 from w7x_twin.mhd import diagnostics
 from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
 from w7x_twin.plasma import current, edge, kinetics, neoclassical, transport
+from w7x_twin.plasma.kinetics import log_gradient
 from w7x_twin.records import programmes
 
 #: Confinement against the ISS04 scaling. The overview reports 1.4 for the discharge
@@ -49,20 +50,13 @@ SCALES = (-2.0, -1.0, -0.5, 0.0, 0.5, 1.0)
 PERIODIC_FLOOR_TOLERANCE = 1.0e-9
 
 
-def module_loads(
-    torus, currents, equilibrium, chi_edge: float, crossing: float,
+def unit_weight_tally(
+    vacuum, z_axis: float, starts: np.ndarray, separatrix: float, chi_edge: float,
     vessel, elements,
-) -> dict:
-    """Power per divertor module from module-equivalent fans; ``equilibrium`` must be the vacuum solve."""
-    vacuum = VacuumField(torus, currents)
-    r_axis, z_axis = fieldlines.find_axis(vacuum)
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
-    )
-    separatrix = float(r_lcfs.max())
-    starts = r_axis + np.linspace(*LAYER, FAN_LINES) * (separatrix - r_axis)
+) -> tuple[dict[tuple[int, str], float], float, int, list[float]]:
+    """Layer-weighted strike weight per (module, unit) over module-equivalent fans,
+    with the total weight, the struck-line count and the connection lengths."""
     period = 2.0 * np.pi / walls.NUM_FIELD_PERIODS_DEFAULT
-
     weight_by_unit: dict[tuple[int, str], float] = {}
     total = 0.0
     struck_lines = 0
@@ -94,7 +88,23 @@ def module_loads(
                 key = (int(module[line]), "upper" if is_upper[line] else "lower")
                 weight_by_unit[key] = weight_by_unit.get(key, 0.0) + float(weights[line])
                 total += float(weights[line])
+    return weight_by_unit, total, struck_lines, connections
 
+
+def module_loads(
+    torus, currents, equilibrium, chi_edge: float, crossing: float,
+    vessel, elements,
+) -> dict:
+    """Power per divertor module from module-equivalent fans; ``equilibrium`` must be the vacuum solve."""
+    vacuum = VacuumField(torus, currents)
+    r_axis, z_axis = fieldlines.find_axis(vacuum)
+    r_lcfs, _ = diagnostics.boundary_cut(equilibrium.wout, 0.0)
+    separatrix = float(r_lcfs.max())
+    starts = r_axis + np.linspace(*LAYER, FAN_LINES) * (separatrix - r_axis)
+
+    weight_by_unit, total, struck_lines, connections = unit_weight_tally(
+        vacuum, z_axis, starts, separatrix, chi_edge, vessel, elements
+    )
     if total <= 0.0:
         return {"units": {}, "lines": struck_lines}
     units = {
@@ -149,14 +159,14 @@ def _midplane_harmonics(torus, twin, waveform: dict[str, float], state) -> dict[
 
 
 def run_errorfield() -> int:
-    configuration = sys.argv[1] if len(sys.argv) > 1 else "standard"
+    configuration = arg(1, default="standard")
     setting = programmes.trim_setting(configuration)
-    twin = Twin(coils_file="coils.w7x_full", verbose=False)
+    twin = _common.twin(coils_file="coils.w7x_full")
     # An n = 1 waveform is not periodic in the field period, so the trace reads a
     # whole-torus table while the equilibrium keeps the per-period one.
     torus = twin.full_torus_response()
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
     print(f"{twin.geometry}")
     print(
         f"{configuration}: the measured correction is {setting.amplitude_a:.0f} A at "
@@ -168,17 +178,7 @@ def run_errorfield() -> int:
     print("  " + ", ".join(f"{k} {v:+7.1f} A" for k, v in waveform.items()))
 
     profiles = kinetics.HIGH_PERFORMANCE
-    knots_s, knots_p = profiles.pressure_spline()
-    finite_beta = twin.solve(
-        twin.state(
-            configuration,
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    finite_beta = twin.solve_profiles(configuration, profiles)
     # The launch anchor is the vacuum boundary, since the traced field is the vacuum one.
     equilibrium = twin.solve(twin.state(configuration), SCAN)
     balance = transport.solve(
@@ -316,49 +316,44 @@ def run_errorfield() -> int:
     spectrum = _midplane_harmonics(torus, twin, waveform, twin.state(configuration))
     print()
     print("the error field on the R = 6.2 m midplane circle, as radial field harmonics")
-    header = f"{'n':>4s} {'B_r [mT]':>11s} {'over B_0':>11s}"
-    print(header)
-    print("-" * len(header))
+    table = _common.Table(("n", "4d"), ("B_r [mT]", "11.4f"), ("over B_0", "11.2e"))
+    table.begin()
     for n, value in sorted(spectrum.items()):
         if n > 6:
             continue
-        print(f"{n:4d} {1e3 * value:11.4f} {value / 2.5:11.2e}")
+        table.row(n, 1e3 * value, value / 2.5)
 
-    ERRORFIELD_OUT.parent.mkdir(parents=True, exist_ok=True)
-    ERRORFIELD_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": configuration,
-                "error_field_harmonics_t": {str(k): v for k, v in spectrum.items()},
-                "trim_setting": {
-                    "amplitude_a": setting.amplitude_a,
-                    "phase_degrees": setting.phase_degrees,
-                    "planar_current_a": setting.planar_current_a,
-                    "method": setting.method,
-                    "source": setting.source,
-                },
-                "trim_geometry": (
-                    "engineering reconstruction from published dimensions, not measured "
-                    "filaments; the synthesised amplitude carries that accuracy"
-                ),
-                "waveform_a": waveform,
-                "heating_power_w": HEATING_W,
-                "power_crossing_separatrix_w": float(crossing),
-                "scan": rows,
-                "periodic_module_spread_floor": floor,
-                "signal_over_floor": float(signal),
-                "measured": {
-                    "uncorrected_asymmetry": measured_uncorrected.value,
-                    "corrected_asymmetry": measured_corrected.value,
-                    "source": measured_uncorrected.source,
-                    "synthesised_within_published_accuracy": inside,
-                },
+    write_record(
+        ERRORFIELD_OUT,
+        {
+            "configuration": configuration,
+            "error_field_harmonics_t": {str(k): v for k, v in spectrum.items()},
+            "trim_setting": {
+                "amplitude_a": setting.amplitude_a,
+                "phase_degrees": setting.phase_degrees,
+                "planar_current_a": setting.planar_current_a,
+                "method": setting.method,
+                "source": setting.source,
             },
-            indent=2,
-        )
+            "trim_geometry": (
+                "engineering reconstruction from published dimensions, not measured "
+                "filaments; the synthesised amplitude carries that accuracy"
+            ),
+            "waveform_a": waveform,
+            "heating_power_w": HEATING_W,
+            "power_crossing_separatrix_w": float(crossing),
+            "scan": rows,
+            "periodic_module_spread_floor": floor,
+            "signal_over_floor": float(signal),
+            "measured": {
+                "uncorrected_asymmetry": measured_uncorrected.value,
+                "corrected_asymmetry": measured_corrected.value,
+                "source": measured_uncorrected.source,
+                "synthesised_within_published_accuracy": inside,
+            },
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {ERRORFIELD_OUT}")
     return 0
 
 
@@ -379,36 +374,10 @@ def module_spread(torus, currents, vessel, elements, chi_edge, separatrix, cross
     vacuum = field.VacuumField(torus, currents)
     r_axis, z_axis = fieldlines.find_axis(vacuum)
     starts = r_axis + np.linspace(*LAYER, FAN_LINES) * (separatrix - r_axis)
-    period = 2.0 * np.pi / walls.NUM_FIELD_PERIODS_DEFAULT
 
-    weight_by_unit: dict[tuple[int, str], float] = {}
-    total = 0.0
-    struck_lines = 0
-    for module_index in range(walls.NUM_FIELD_PERIODS_DEFAULT):
-        for offset in (+1.0, -1.0):
-            section, _ = fieldlines.trace(
-                vacuum, starts, np.full(starts.shape, offset * z_axis), turns=TURNS,
-                plane_phi=module_index * period, vessel=vessel, components=elements,
-            )
-            strikes = section.strikes
-            struck = strikes.struck
-            if not struck.any():
-                continue
-            struck_lines += int(struck.sum())
-            decay = edge.power_decay_length(
-                chi_edge, float(np.median(strikes.connection_length_m[struck])), 20.0
-            )
-            weights = np.where(
-                struck,
-                edge.layer_weights(strikes.start_r, separatrix, decay),
-                0.0,
-            )
-            module, is_upper = walls.unit_of(strikes.phi, strikes.z)
-            for line in np.flatnonzero(struck):
-                key = (int(module[line]), "upper" if is_upper[line] else "lower")
-                weight_by_unit[key] = weight_by_unit.get(key, 0.0) + float(weights[line])
-                total += float(weights[line])
-
+    weight_by_unit, total, struck_lines, _ = unit_weight_tally(
+        vacuum, z_axis, starts, separatrix, chi_edge, vessel, elements
+    )
     if total <= 0.0:
         return {"lines": struck_lines, "module_spread": float("nan"),
                 "unit_spread": float("nan")}
@@ -427,7 +396,7 @@ def module_spread(torus, currents, vessel, elements, chi_edge, separatrix, cross
 
 
 def run_symmetrise() -> int:
-    configuration = sys.argv[1] if len(sys.argv) > 1 else "standard"
+    configuration = arg(1, default="standard")
     forward = programmes.symmetrisation_settings(field_sense="forward")
     one_one = next(s for s in forward if s.mode == "1/1")
     two_two = next(s for s in forward if s.mode == "2/2")
@@ -437,11 +406,11 @@ def run_symmetrise() -> int:
     )
     print(f"  {one_one.source}")
 
-    twin = Twin(coils_file=COILS, verbose=False)
+    twin = _common.twin(coils_file=COILS)
     torus = twin.full_torus_response()
     print(f"{twin.geometry}")
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
     state = twin.state(configuration)
 
     equilibrium = twin.solve(twin.state(configuration), SCAN)
@@ -454,9 +423,7 @@ def run_symmetrise() -> int:
     )
     chi_edge = float(balance.chi_m2_s[-1])
     crossing = 5.0e6 - float(balance.radiated_power_w)
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
-    )
+    r_lcfs, _ = diagnostics.boundary_cut(equilibrium.wout, 0.0)
     separatrix = float(r_lcfs.max())
 
     # The negative of each measured correction, which is the field it cancels. The trim phase
@@ -527,29 +494,25 @@ def run_symmetrise() -> int:
         f"{both['module_spread']:.4f} on it"
     )
 
-    SYMMETRISE_OUT.parent.mkdir(parents=True, exist_ok=True)
-    SYMMETRISE_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": configuration,
-                "settings": [
-                    {"mode": s.mode, "circuit": s.circuit,
-                     "coil_current_a": s.coil_current_a,
-                     "mode_phase_degrees": s.mode_phase_degrees,
-                     "spread_before": s.spread_before, "spread_after": s.spread_after,
-                     "programme": s.programme}
-                    for s in forward
-                ],
-                "trim_waveform_a": trim,
-                "control_waveform_a": control,
-                "published": published,
-                "cases": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        SYMMETRISE_OUT,
+        {
+            "configuration": configuration,
+            "settings": [
+                {"mode": s.mode, "circuit": s.circuit,
+                 "coil_current_a": s.coil_current_a,
+                 "mode_phase_degrees": s.mode_phase_degrees,
+                 "spread_before": s.spread_before, "spread_after": s.spread_after,
+                 "programme": s.programme}
+                for s in forward
+            ],
+            "trim_waveform_a": trim,
+            "control_waveform_a": control,
+            "published": published,
+            "cases": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {SYMMETRISE_OUT}")
     return 0
 
 
@@ -630,11 +593,11 @@ class FilamentField:
 
 
 def run_trim_radius() -> int:
-    configuration = sys.argv[1] if len(sys.argv) > 1 else "standard"
+    configuration = arg(1, default="standard")
     setting = programmes.trim_setting(configuration)
     published = programmes.MACHINE_MEASUREMENTS["intrinsic_error_field_b11"]
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     equilibrium = twin.solve(twin.state(configuration), SCAN)
     print(f"{twin.geometry}")
     print(
@@ -716,27 +679,23 @@ def run_trim_radius() -> int:
             f"{radii.min():.1f} to {radii.max():.1f} m"
         )
 
-    TRIM_RADIUS_OUT.parent.mkdir(parents=True, exist_ok=True)
-    TRIM_RADIUS_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": configuration,
-                "mode": list(MODE),
-                "measured_current_a": setting.amplitude_a,
-                "measured_phase_degrees": setting.phase_degrees,
-                "published_b11": published.value,
-                "published_relative_uncertainty": published.relative_uncertainty,
-                "published_source": published.source,
-                "reconstruction_radius_m": coil_geometry.OUTER_VESSEL_RADIUS_M,
-                "pinned_radius_m": pinned,
-                "pinned_radius_band_m": band,
-                "scan": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        TRIM_RADIUS_OUT,
+        {
+            "configuration": configuration,
+            "mode": list(MODE),
+            "measured_current_a": setting.amplitude_a,
+            "measured_phase_degrees": setting.phase_degrees,
+            "published_b11": published.value,
+            "published_relative_uncertainty": published.relative_uncertainty,
+            "published_source": published.source,
+            "reconstruction_radius_m": coil_geometry.OUTER_VESSEL_RADIUS_M,
+            "pinned_radius_m": pinned,
+            "pinned_radius_band_m": band,
+            "scan": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {TRIM_RADIUS_OUT}")
     return 0
 
 
@@ -820,8 +779,8 @@ def spectrum_of(equilibrium, members, mode: str, amplitude: float):
 
 
 def run_intrinsic() -> int:
-    configuration = sys.argv[1] if len(sys.argv) > 1 else "standard"
-    twin = Twin(verbose=False)
+    configuration = arg(1, default="standard")
+    twin = _common.twin()
     equilibrium = twin.solve(twin.state(configuration), SCAN)
     state = twin.state(configuration)
     members = module_filaments(twin.coils, np.asarray(state.currents), MODULE)
@@ -929,26 +888,22 @@ def run_intrinsic() -> int:
         f"a factor of {spread:.1f}, which is what separates them"
     )
 
-    INTRINSIC_OUT.parent.mkdir(parents=True, exist_ok=True)
-    INTRINSIC_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": configuration,
-                "module": MODULE + 1,
-                "filaments": len(members),
-                "published_b11": published.value,
-                "published_source": published.source,
-                "measured_phase_11_degrees": one_one.mode_phase_degrees,
-                "measured_phase_22_degrees": two_two.mode_phase_degrees,
-                "scan": rows,
-                "summary": summary,
-                "closest": best,
-            },
-            indent=2,
-        )
+    write_record(
+        INTRINSIC_OUT,
+        {
+            "configuration": configuration,
+            "module": MODULE + 1,
+            "filaments": len(members),
+            "published_b11": published.value,
+            "published_source": published.source,
+            "measured_phase_11_degrees": one_one.mode_phase_degrees,
+            "measured_phase_22_degrees": two_two.mode_phase_degrees,
+            "scan": rows,
+            "summary": summary,
+            "closest": best,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {INTRINSIC_OUT}")
     return 0
 
 
@@ -1009,7 +964,7 @@ DURATION_S = 6.0
 
 
 def run_history() -> int:
-    identifier = sys.argv[1] if len(sys.argv) > 1 else "20180919.033"
+    identifier = arg(1, default="20180919.033")
     programme = programmes.get(identifier)
     print(f"{programme.identifier}  ({programme.campaign}, epoch {programme.epoch})")
     print(f"  {programme.description}")
@@ -1022,7 +977,7 @@ def run_history() -> int:
     )
     switch = programme.phase_s[0] if programme.phase_s else 1.7
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     equilibrium = twin.solve(twin.state("standard"), SCAN)
     analysis = diagnostics.analyse(equilibrium)
     profiles = kinetics.HIGH_PERFORMANCE
@@ -1121,28 +1076,24 @@ def run_history() -> int:
         f"within five per cent of its final value in {current_settled:.2f} s"
     )
 
-    HISTORY_OUT.parent.mkdir(parents=True, exist_ok=True)
-    HISTORY_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "identifier": programme.identifier,
-                "ecrh_w": ecrh,
-                "beam_w": beam,
-                "switch_s": switch,
-                "inductive_time_s": inductive,
-                "time_s": trace.time_s.tolist(),
-                "power_w": trace.power_w.tolist(),
-                "stored_energy_j": trace.stored_energy_j.tolist(),
-                "bootstrap_current_a": trace.bootstrap_current_a.tolist(),
-                "edge_transform": trace.edge_transform.tolist(),
-                "energy_settling_s": energy_settled,
-                "current_settling_s": current_settled,
-            },
-            indent=2,
-        )
+    write_record(
+        HISTORY_OUT,
+        {
+            "identifier": programme.identifier,
+            "ecrh_w": ecrh,
+            "beam_w": beam,
+            "switch_s": switch,
+            "inductive_time_s": inductive,
+            "time_s": trace.time_s.tolist(),
+            "power_w": trace.power_w.tolist(),
+            "stored_energy_j": trace.stored_energy_j.tolist(),
+            "bootstrap_current_a": trace.bootstrap_current_a.tolist(),
+            "edge_transform": trace.edge_transform.tolist(),
+            "energy_settling_s": energy_settled,
+            "current_settling_s": current_settled,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {HISTORY_OUT}")
     return 0
 
 
@@ -1194,8 +1145,8 @@ def compare_curve(name: str, modelled, profile, radius) -> dict:
 
 
 def run_profiles() -> int:
-    wanted = sys.argv[1:] or list(DISCHARGES)
-    twin = Twin(verbose=False)
+    wanted = args() or list(DISCHARGES)
+    twin = _common.twin()
     print(f"{twin.geometry}")
 
     coefficients = neoclassical.load_radial_profile(verbose=False)
@@ -1259,16 +1210,7 @@ def run_profiles() -> int:
                 f"{density_profile.peaking():.2f}, carried as the drawn curve"
             )
 
-        equilibrium = twin.solve(
-            twin.state(
-                "standard",
-                scenario=Scenario(
-                    pressure_spline=base.pressure_spline(), peak_pressure_pa=1.0,
-                    pressure_profile=(1.0,),
-                ),
-            ),
-            SCAN,
-        )
+        equilibrium = twin.solve_profiles("standard", base)
         # The deposition the traced ray gives, so the solved shapes carry the beam's
         # own path; where the ray does not cross, the resonance layer stands.
         from w7x_twin.analyses.plasma import ray_traced_deposition
@@ -1371,13 +1313,7 @@ def run_profiles() -> int:
             f"inside it"
         )
 
-    PROFILES_OUT.parent.mkdir(parents=True, exist_ok=True)
-    PROFILES_OUT.write_text(
-        json.dumps(
-            {"geometry": twin.geometry.as_dict(), "discharges": records}, indent=2
-        )
-    )
-    print(f"\nwrote {PROFILES_OUT}")
+    write_record(PROFILES_OUT, {"discharges": records}, geometry=twin.geometry)
     return 0
 
 
@@ -1434,17 +1370,7 @@ def power_balance(
     profiles = dataclasses.replace(
         profiles or kinetics.HIGH_PERFORMANCE, density_axis_m3=density_axis_m3
     )
-    knots_s, knots_p = profiles.pressure_spline()
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", profiles)
     return transport.solve(
         equilibrium, profiles, heating=transport.Heating(power_w=power_w),
         model=transport.TransportModel(renormalisation=renormalisation),
@@ -1567,9 +1493,9 @@ def neoclassical_share(
     ion = ion_fraction * electron
 
     # Logarithmic gradients per metre, which is what the Onsager drives are.
-    dln_n = np.gradient(np.log(np.maximum(density, 1e-30)), radius)
-    dln_te = np.gradient(np.log(np.maximum(electron, 1e-30)), radius)
-    dln_ti = np.gradient(np.log(np.maximum(ion, 1e-30)), radius)
+    dln_n = log_gradient(density, radius)
+    dln_te = log_gradient(electron, radius)
+    dln_ti = log_gradient(ion, radius)
 
     volume = np.abs(np.asarray(equilibrium.wout.vp)) * 4.0 * np.pi**2
     grid = np.linspace(0.0, 1.0, len(volume))
@@ -1633,8 +1559,8 @@ def layer_geometry(twin: Twin) -> dict:
     global _LAYER
     if _LAYER is not None:
         return _LAYER
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
     frame = walls.target_arc_frame(elements)
     vacuum = VacuumField(twin.response, twin.state("standard").currents)
     equilibrium = twin.solve(twin.state("standard"), SCAN)
@@ -1650,14 +1576,11 @@ def layer_geometry(twin: Twin) -> dict:
     closed_lines = 0
     for index in range(LAUNCH_PLANES):
         phi = index * period / LAUNCH_PLANES
-        axis_r, axis_z = fieldlines.find_axis(vacuum, plane_phi=phi)
-        r_cut, _ = diagnostics.flux_surface(
-            equilibrium.wout, int(equilibrium.wout.ns) - 1, phi
+        starts, axis_r, axis_z, outboard = fieldlines.fan_starts(
+            vacuum, equilibrium.wout, LAYER, DISCHARGE_LINES, plane_phi=phi
         )
-        outboard = float(r_cut.max())
         if separatrix is None:
             separatrix = outboard
-        starts = axis_r + np.linspace(*LAYER, DISCHARGE_LINES) * (outboard - axis_r)
         connection = fieldlines.connection_lengths(
             vacuum, starts, np.full(starts.shape, axis_z), vessel, elements,
             turns=TURNS, plane_phi=phi,
@@ -1801,8 +1724,8 @@ def _fraction_for_charge(
 
 
 def run_discharge() -> int:
-    wanted = sys.argv[1:] or programmes.identifiers()
-    twin = Twin(verbose=False)
+    wanted = args() or programmes.identifiers()
+    twin = _common.twin()
     print(f"{twin.geometry}")
     print(f"where a discharge states no enhancement the model runs at {RENORMALISATION}")
 
@@ -2363,11 +2286,7 @@ def run_discharge() -> int:
         s_knots, knots_p = kinetics.HIGH_PERFORMANCE.pressure_spline()
     finite_beta = twin.solve(
         twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(s_knots, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
+            "standard", scenario=Scenario.from_pressure_spline(s_knots, knots_p)
         ),
         SCAN,
     )
@@ -2379,9 +2298,8 @@ def run_discharge() -> int:
     at_reconstruction = twin.solve(
         twin.state(
             "standard",
-            scenario=Scenario(
-                pressure_spline=(s_knots, knots_p * 0.0038 / max(first_beta, 1e-9)),
-                peak_pressure_pa=1.0, pressure_profile=(1.0,),
+            scenario=Scenario.from_pressure_spline(
+                s_knots, knots_p * 0.0038 / max(first_beta, 1e-9)
             ),
         ),
         SCAN,
@@ -2408,9 +2326,8 @@ def run_discharge() -> int:
     finite_beta = twin.solve(
         twin.state(
             "standard",
-            scenario=Scenario(
-                pressure_spline=(s_knots, knots_p * 0.0105 / max(first_beta, 1e-9)),
-                peak_pressure_pa=1.0, pressure_profile=(1.0,),
+            scenario=Scenario.from_pressure_spline(
+                s_knots, knots_p * 0.0105 / max(first_beta, 1e-9)
             ),
         ),
         SCAN,
@@ -2614,17 +2531,14 @@ def run_discharge() -> int:
             )
         )
 
-    DISCHARGE_OUT.parent.mkdir(parents=True, exist_ok=True)
-    DISCHARGE_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "renormalisation": RENORMALISATION,
-                "programmes": records,
-                "machine": machine_checks,
-            },
-            indent=2,
-        )
+    write_record(
+        DISCHARGE_OUT,
+        {
+            "renormalisation": RENORMALISATION,
+            "programmes": records,
+            "machine": machine_checks,
+        },
+        geometry=twin.geometry,
     )
     total = sum(len(record["checks"]) for record in records) + len(machine_checks)
     agreed = sum(
@@ -2635,5 +2549,4 @@ def run_discharge() -> int:
     ) + sum(1 for check in machine_checks if check["within_published_accuracy"])
     print()
     print(f"{agreed} of {total} within the accuracy the sources support")
-    print(f"wrote {DISCHARGE_OUT}")
     return 0

@@ -3,20 +3,18 @@
 from __future__ import annotations
 
 import dataclasses
-import json
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
-from w7x_twin.analyses.plasma import layer_constants
+from w7x_twin.analyses import _common
+from w7x_twin.analyses._common import arg, layer_constants, write_record
 from w7x_twin.hardware import machine, walls
-from w7x_twin.hardware.walls import load_vessel
 from w7x_twin.magnetics import field, fieldlines, plasma_response
 from w7x_twin.magnetics.field import VacuumField
 from w7x_twin.mhd import diagnostics
-from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
+from w7x_twin.mhd.equilibrium import SCAN, Twin
 from w7x_twin.plasma import current as plasma_current
 from w7x_twin.plasma import edge, kinetics, neoclassical, transport
 from w7x_twin.records import programmes
@@ -31,9 +29,6 @@ TURNS = 200
 #: Percentile of the connection-length distribution taken as the strike-line value; the
 #: power is carried by the long field lines, not by the median of a fan.
 STRIKE_LINE_PERCENTILE = 90
-#: The radial drift-kinetic scan and the effective-ripple profile the layer reads.
-MONKES_RADIAL = Path(neoclassical.RADIAL_SCANS[0])
-RIPPLE_TABLE = Path(neoclassical.RIPPLE_TABLE)
 
 
 # -- exhaust -----------------------------------------------------------------------
@@ -47,7 +42,6 @@ EXHAUST_OUT = Path("results/exhaust/heat_flux.json")
 #: Surface results are reported at. This script reads the radial scan only, so it
 #: never stands the single-surface table in and never needs that table's surface.
 REFERENCE_SURFACE = neoclassical.REFERENCE_SURFACE
-MONKES_FALLBACK = Path(neoclassical.RADIAL_SCANS[1])
 
 EXHAUST_LINES = 240
 
@@ -58,44 +52,49 @@ UPSTREAM_DENSITIES = (0.5e19, 1.0e19, 2.0e19, 4.0e19, 8.0e19)
 DETACHMENT_EV = 5.0
 
 
-def load_coefficients():
-    for directory in (MONKES_RADIAL, MONKES_FALLBACK):
-        profile = neoclassical.discover_monoenergetic_profile(directory)
-        if profile is not None:
-            return profile
-    raise SystemExit("no drift-kinetic scan found")
+load_coefficients = _common.radial_coefficients
+
+
+def fanned_strikes(vacuum, wout, lines: int, vessel, elements):
+    """Strikes of one fan per launch plane, each anchored to its own axis and boundary
+    cut and remapped onto the first plane's separatrix; returns them with that radius."""
+    period = 2.0 * np.pi / walls.NUM_FIELD_PERIODS_DEFAULT
+    separatrix = None
+    per_plane = []
+    for index in range(LAUNCH_PLANES):
+        phi = index * period / LAUNCH_PLANES
+        starts, _, axis_z, outboard = fieldlines.fan_starts(
+            vacuum, wout, LAYER, lines, plane_phi=phi
+        )
+        if separatrix is None:
+            separatrix = outboard
+        section, _ = fieldlines.trace(
+            vacuum, starts, np.full(starts.shape, axis_z), turns=TURNS,
+            plane_phi=phi, vessel=vessel, components=elements,
+        )
+        per_plane.append(
+            dataclasses.replace(
+                section.strikes, start_r=separatrix + (starts - outboard)
+            )
+        )
+    return fieldlines.Strikes.concatenate(per_plane), separatrix
 
 
 def run_exhaust() -> int:
-    power = (float(sys.argv[1]) if len(sys.argv) > 1 else 5.0) * 1e6
-    carbon = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
+    power = arg(1, float, 5.0) * 1e6
+    carbon = arg(2, float, 0.0)
 
-    twin = Twin(verbose=False)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    twin = _common.twin()
+    vessel = _common.vessel()
+    elements = _common.components()
     frame = walls.target_arc_frame(elements)
     coefficients = load_coefficients()
-    stored = np.load(RIPPLE_TABLE)
-    ripple = neoclassical.EffectiveRipple(
-        s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-    )
+    ripple = neoclassical.load_ripple()
     print(f"{twin.geometry}")
     print(f"{power / 1e6:.0f} MW, carbon fraction {carbon:g}")
 
-    import dataclasses
-
     profiles = dataclasses.replace(kinetics.HIGH_PERFORMANCE, carbon_fraction=carbon)
-    knots_s, knots_p = profiles.pressure_spline()
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", profiles)
     balance = transport.solve(
         equilibrium, profiles, heating=transport.Heating(power_w=power),
         model=transport.TransportModel(renormalisation=RENORMALISATION),
@@ -115,39 +114,8 @@ def run_exhaust() -> int:
     # the lines actually follow, and a fan anchored there misses the layer.
     vacuum = VacuumField(twin.response, twin.state("standard").currents)
     vacuum_equilibrium = twin.solve(twin.state("standard"), SCAN)
-    period = 2.0 * np.pi / walls.NUM_FIELD_PERIODS_DEFAULT
-    separatrix = None
-    per_plane = []
-    for index in range(LAUNCH_PLANES):
-        phi = index * period / LAUNCH_PLANES
-        axis_r, axis_z = fieldlines.find_axis(vacuum, plane_phi=phi)
-        r_cut, _ = diagnostics.flux_surface(
-            vacuum_equilibrium.wout, int(vacuum_equilibrium.wout.ns) - 1, phi
-        )
-        outboard = float(r_cut.max())
-        if separatrix is None:
-            separatrix = outboard
-        starts = axis_r + np.linspace(*LAYER, EXHAUST_LINES) * (outboard - axis_r)
-        section, _ = fieldlines.trace(
-            vacuum, starts, np.full(starts.shape, axis_z), turns=TURNS,
-            plane_phi=phi, vessel=vessel, components=elements,
-        )
-        per_plane.append(
-            dataclasses.replace(
-                section.strikes, start_r=separatrix + (starts - outboard)
-            )
-        )
-    strikes = fieldlines.Strikes(
-        struck=np.concatenate([s.struck for s in per_plane]),
-        r=np.concatenate([s.r for s in per_plane]),
-        z=np.concatenate([s.z for s in per_plane]),
-        phi=np.concatenate([s.phi for s in per_plane]),
-        connection_length_m=np.concatenate(
-            [s.connection_length_m for s in per_plane]
-        ),
-        start_r=np.concatenate([s.start_r for s in per_plane]),
-        component=np.concatenate([s.component for s in per_plane]),
-        component_names=per_plane[0].component_names,
+    strikes, separatrix = fanned_strikes(
+        vacuum, vacuum_equilibrium.wout, EXHAUST_LINES, vessel, elements
     )
     wanted = [index for index, e in enumerate(elements) if e.name in frame]
     mask = strikes.struck & np.isin(strikes.component, wanted)
@@ -514,42 +482,38 @@ def run_exhaust() -> int:
             f"{recycling.equilibrium_pressure_pa:10.3f}"
         )
 
-    EXHAUST_OUT.parent.mkdir(parents=True, exist_ok=True)
-    EXHAUST_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "heating_power_w": power,
-                "carbon_fraction": carbon,
-                "radiated_power_w": float(balance.radiated_power_w),
-                "power_crossing_separatrix_w": float(crossing),
-                "wetted": geometry,
-                "power_decay_length_m": float(decay),
-                "edge_diffusivity_m2_s": chi_edge,
-                "connection_length_m": connection,
-                "incidence_sine": incidence,
-                "incidence_degrees": float(np.degrees(np.arcsin(incidence))),
-                "design_bound_degrees": design.value,
-                "swept_contour_incidence_sine": swept,
-                "target_incidence_degrees": per_target,
-                "incidence_range_degrees": [
-                    float(np.degrees(np.arcsin(spread.min()))),
-                    float(np.degrees(np.arcsin(spread.max()))),
-                ],
-                "target_heat_flux_w_m2": float(target_flux),
-                "parallel_heat_flux_w_m2": float(parallel_flux),
-                "target_profile": profile,
-                "width_scan": width_scan,
-                "intervals": intervals,
-                "detachment_threshold_ev": DETACHMENT_EV,
-                "upstream_scan": rows,
-                "incidence_scan": incidence_rows,
-                "detachment_scan": detachment_rows,
-            },
-            indent=2,
-        )
+    write_record(
+        EXHAUST_OUT,
+        {
+            "heating_power_w": power,
+            "carbon_fraction": carbon,
+            "radiated_power_w": float(balance.radiated_power_w),
+            "power_crossing_separatrix_w": float(crossing),
+            "wetted": geometry,
+            "power_decay_length_m": float(decay),
+            "edge_diffusivity_m2_s": chi_edge,
+            "connection_length_m": connection,
+            "incidence_sine": incidence,
+            "incidence_degrees": float(np.degrees(np.arcsin(incidence))),
+            "design_bound_degrees": design.value,
+            "swept_contour_incidence_sine": swept,
+            "target_incidence_degrees": per_target,
+            "incidence_range_degrees": [
+                float(np.degrees(np.arcsin(spread.min()))),
+                float(np.degrees(np.arcsin(spread.max()))),
+            ],
+            "target_heat_flux_w_m2": float(target_flux),
+            "parallel_heat_flux_w_m2": float(parallel_flux),
+            "target_profile": profile,
+            "width_scan": width_scan,
+            "intervals": intervals,
+            "detachment_threshold_ev": DETACHMENT_EV,
+            "upstream_scan": rows,
+            "incidence_scan": incidence_rows,
+            "detachment_scan": detachment_rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {EXHAUST_OUT}")
     return 0
 
 
@@ -581,25 +545,15 @@ def summarise(sine: np.ndarray) -> dict:
 
 
 def run_incidence() -> int:
-    power = 1e6 * (float(sys.argv[1]) if len(sys.argv) > 1 else 5.0)
+    power = 1e6 * arg(1, float, 5.0)
 
-    twin = Twin(verbose=False)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    twin = _common.twin()
+    vessel = _common.vessel()
+    elements = _common.components()
     frame = walls.target_arc_frame(elements)
 
     profiles = dataclasses.replace(kinetics.HIGH_PERFORMANCE, carbon_fraction=0.0)
-    knots_s, knots_p = profiles.pressure_spline()
-    finite_beta = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    finite_beta = twin.solve_profiles("standard", profiles)
     balance = transport.solve(
         finite_beta, profiles, heating=transport.Heating(power_w=power),
         model=transport.TransportModel(renormalisation=RENORMALISATION),
@@ -611,40 +565,8 @@ def run_incidence() -> int:
     # per-element statistics see the band and not one comb of it.
     vacuum = VacuumField(twin.response, twin.state("standard").currents)
     equilibrium = twin.solve(twin.state("standard"), SCAN)
-    period = 2.0 * np.pi / walls.NUM_FIELD_PERIODS_DEFAULT
-    separatrix = None
-    per_plane = []
-    for index in range(LAUNCH_PLANES):
-        phi = index * period / LAUNCH_PLANES
-        axis_r, axis_z = fieldlines.find_axis(vacuum, plane_phi=phi)
-        r_cut, _ = diagnostics.flux_surface(
-            equilibrium.wout, int(equilibrium.wout.ns) - 1, phi
-        )
-        outboard = float(r_cut.max())
-        if separatrix is None:
-            separatrix = outboard
-            r_lcfs = r_cut
-        starts = axis_r + np.linspace(*LAYER, INCIDENCE_LINES) * (outboard - axis_r)
-        section, _ = fieldlines.trace(
-            vacuum, starts, np.full(starts.shape, axis_z), turns=TURNS,
-            plane_phi=phi, vessel=vessel, components=elements,
-        )
-        per_plane.append(
-            dataclasses.replace(
-                section.strikes, start_r=separatrix + (starts - outboard)
-            )
-        )
-    strikes = fieldlines.Strikes(
-        struck=np.concatenate([s.struck for s in per_plane]),
-        r=np.concatenate([s.r for s in per_plane]),
-        z=np.concatenate([s.z for s in per_plane]),
-        phi=np.concatenate([s.phi for s in per_plane]),
-        connection_length_m=np.concatenate(
-            [s.connection_length_m for s in per_plane]
-        ),
-        start_r=np.concatenate([s.start_r for s in per_plane]),
-        component=np.concatenate([s.component for s in per_plane]),
-        component_names=per_plane[0].component_names,
+    strikes, separatrix = fanned_strikes(
+        vacuum, equilibrium.wout, INCIDENCE_LINES, vessel, elements
     )
     wanted = [index for index, e in enumerate(elements) if e.name in frame]
     mask = strikes.struck & np.isin(strikes.component, wanted)
@@ -755,7 +677,6 @@ def run_incidence() -> int:
 
     # The layer solved at the measured incidence rather than at the design angle.
     connection = float(np.percentile(strikes.connection_length_m[mask], STRIKE_LINE_PERCENTILE))
-    separatrix = float(r_lcfs.max())
     chi_edge = float(balance.chi_m2_s[-1])
     upstream_density = float(balance.density_m3[-1])
 
@@ -788,42 +709,38 @@ def run_incidence() -> int:
             f"{parallel * sine / 1e6:8.2f}"
         )
 
-    INCIDENCE_OUT.parent.mkdir(parents=True, exist_ok=True)
-    INCIDENCE_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "heating_w": power,
-                "power_crossing_separatrix_w": crossing,
-                "connection_length_m": connection,
-                "element_degrees": ELEMENT_DEGREES,
-                "design_bound_degrees": design.value,
-                "swept_contour": swept_summary,
-                "own_surface": surface_summary,
-                "fraction_within_design_bound": within,
-                "per_element": per_element,
-                "within_element_spread_degrees": (
-                    float(np.median([r["incidence_spread_degrees"] for r in resolved]))
-                    if resolved else float("nan")
-                ),
-                "between_element_scatter_degrees": float(
-                    np.std([r["incidence_degrees"] for r in per_element])
-                ),
-                "layer": {
-                    label: {
-                        "width_m": value["width_m"],
-                        "area_m2": value["area_m2"],
-                        "target_temperature_ev": value["target_temperature_ev"],
-                        "upstream_temperature_ev": value["solution"].upstream_temperature_ev,
-                        "converged": value["converged"],
-                    }
-                    for label, value in closed.items()
-                },
+    write_record(
+        INCIDENCE_OUT,
+        {
+            "heating_w": power,
+            "power_crossing_separatrix_w": crossing,
+            "connection_length_m": connection,
+            "element_degrees": ELEMENT_DEGREES,
+            "design_bound_degrees": design.value,
+            "swept_contour": swept_summary,
+            "own_surface": surface_summary,
+            "fraction_within_design_bound": within,
+            "per_element": per_element,
+            "within_element_spread_degrees": (
+                float(np.median([r["incidence_spread_degrees"] for r in resolved]))
+                if resolved else float("nan")
+            ),
+            "between_element_scatter_degrees": float(
+                np.std([r["incidence_degrees"] for r in per_element])
+            ),
+            "layer": {
+                label: {
+                    "width_m": value["width_m"],
+                    "area_m2": value["area_m2"],
+                    "target_temperature_ev": value["target_temperature_ev"],
+                    "upstream_temperature_ev": value["solution"].upstream_temperature_ev,
+                    "converged": value["converged"],
+                }
+                for label, value in closed.items()
             },
-            indent=2,
-        )
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {INCIDENCE_OUT}")
     return 0
 
 
@@ -838,7 +755,7 @@ LINES_PER_MODULE = 12
 
 
 def run_strikes() -> int:
-    trim_current = float(sys.argv[1]) if len(sys.argv) > 1 else 0.0
+    trim_current = arg(1, float, 0.0)
 
     if trim_current:
         twin = Twin(coils_file="coils.w7x_full", verbose=False)
@@ -850,20 +767,18 @@ def run_strikes() -> int:
         currents = state.currents
         label = f"standard, trim_a1 at {trim_current:.0f} A/turn"
     else:
-        twin = Twin(verbose=False)
+        twin = _common.twin()
         currents = machine.get("standard").as_extcur()
         label = "standard, trim circuits unpowered"
 
     vacuum = VacuumField(twin.response, currents)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
     print(f"{label}: {len(elements)} plasma-facing components loaded")
 
     equilibrium = twin.solve(twin.state("standard"), SCAN)
     r_axis, z_axis = fieldlines.find_axis(vacuum)
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
-    )
+    r_lcfs, _ = diagnostics.boundary_cut(equilibrium.wout, 0.0)
     half_width = r_lcfs.max() - r_axis
 
     # The same fan at the equivalent point of every module. Every module plane is an
@@ -974,29 +889,15 @@ MIGRATION_LINES = 90
 #: edge as well and spreads the strikes over the whole target, which buries the motion.
 MIGRATION_LAYER = (1.00, 1.14)
 
-#: The surface cache/monkes_er.dat was solved on, taken from the package so this
-#: script and the others that fall back to it normalise the same way.
-SINGLE_SURFACE = neoclassical.SINGLE_SURFACE
-MONKES_TABLE = Path("cache/monkes_er.dat")
-
-
-def load_drift_kinetic():
-    """Per-surface tables if the radial scan has run, else the one solved surface."""
-    profile = neoclassical.discover_monoenergetic_profile(MONKES_RADIAL)
-    if profile is not None:
-        return profile
-    return neoclassical.load_monoenergetic(MONKES_TABLE, SINGLE_SURFACE)
+load_drift_kinetic = _common.drift_kinetic_coefficients
 
 
 def total_field(vacuum: VacuumField, parts) -> VacuumField:
     """Copy of the vacuum field with the plasma-current contribution added."""
-    combined = object.__new__(VacuumField)
-    combined.__dict__.update(vacuum.__dict__)
     shape = (vacuum.num_phi, vacuum.num_z, vacuum.num_r)
-    combined.b_r = vacuum.b_r + parts[0].reshape(shape)
-    combined.b_phi = vacuum.b_phi + parts[1].reshape(shape)
-    combined.b_z = vacuum.b_z + parts[2].reshape(shape)
-    return combined
+    return vacuum.with_added_field(
+        parts[0].reshape(shape), parts[1].reshape(shape), parts[2].reshape(shape)
+    )
 
 
 def resolution_floor(field, strikes, mask, steps_per_period=120) -> float:
@@ -1056,10 +957,10 @@ def strike_summary(strikes, names, elements, frame) -> dict:
 
 
 def run_migration() -> int:
-    drive = sys.argv[1] if len(sys.argv) > 1 else "redl"
-    twin = Twin(verbose=False)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    drive = arg(1, default="redl")
+    twin = _common.twin()
+    vessel = _common.vessel()
+    elements = _common.components()
     frame = walls.target_arc_frame(elements)
     print(f"drive: {drive}")
     print("  target arc: " + ", ".join(
@@ -1069,11 +970,8 @@ def run_migration() -> int:
 
     keywords = {"target": drive}
     if drive == "drift_kinetic":
-        stored = np.load(RIPPLE_TABLE)
         keywords["coefficients"] = load_drift_kinetic()
-        keywords["ripple"] = neoclassical.EffectiveRipple(
-            s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-        )
+        keywords["ripple"] = neoclassical.load_ripple()
 
     vacuum = VacuumField(twin.response, twin.state("standard").currents)
     r_axis, z_axis = fieldlines.find_axis(vacuum)
@@ -1108,9 +1006,7 @@ def run_migration() -> int:
         # The fan is anchored to this equilibrium's own boundary, so every case samples
         # the same layer outside the plasma rather than the same absolute radii, which
         # the Shafranov shift would move the boundary out from under.
-        r_lcfs, _ = diagnostics.flux_surface(
-            equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
-        )
+        r_lcfs, _ = diagnostics.boundary_cut(equilibrium.wout, 0.0)
         half_width = r_lcfs.max() - r_axis
         starts = r_axis + np.linspace(*MIGRATION_LAYER, MIGRATION_LINES) * half_width
         section, _ = fieldlines.trace(
@@ -1174,14 +1070,9 @@ def run_migration() -> int:
             f"{row.get('lines', 0):6d}"
         )
 
-    MIGRATION_OUT.parent.mkdir(parents=True, exist_ok=True)
-    MIGRATION_OUT.write_text(
-        json.dumps(
-            {"geometry": twin.geometry.as_dict(), "drive": drive, "steps": rows},
-            indent=2,
-        )
+    write_record(
+        MIGRATION_OUT, {"drive": drive, "steps": rows}, geometry=twin.geometry
     )
-    print(f"\nwrote {MIGRATION_OUT}")
     return 0
 
 
@@ -1200,7 +1091,7 @@ COST_PER_IONISATION_EV = 30.0
 
 
 def run_recycling() -> int:
-    power = 1e6 * (float(sys.argv[1]) if len(sys.argv) > 1 else 5.0)
+    power = 1e6 * arg(1, float, 5.0)
     crossing = power * 0.926
 
     # The layer the exhaust record carries, so this ramp and the heat-flux analysis
@@ -1277,20 +1168,16 @@ def run_recycling() -> int:
             f"{detached.target_temperature_ev:14.2f}"
         )
 
-    RECYCLING_OUT.parent.mkdir(parents=True, exist_ok=True)
-    RECYCLING_OUT.write_text(
-        json.dumps(
-            {
-                "heating_w": power,
-                "crossing_power_w": crossing,
-                "parallel_flux_w_m2": parallel,
-                "connection_length_m": connection,
-                "incidence_sine": incidence,
-                "wetted_area_m2": area,
-                "cases": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        RECYCLING_OUT,
+        {
+            "heating_w": power,
+            "crossing_power_w": crossing,
+            "parallel_flux_w_m2": parallel,
+            "connection_length_m": connection,
+            "incidence_sine": incidence,
+            "wetted_area_m2": area,
+            "cases": rows,
+        },
     )
-    print(f"\nwrote {RECYCLING_OUT}")
     return 0

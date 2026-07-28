@@ -46,6 +46,17 @@ class Scenario:
     def is_vacuum(self) -> bool:
         return self.peak_pressure_pa == 0.0 and self.net_toroidal_current_a == 0.0
 
+    @staticmethod
+    def from_pressure_spline(
+        knots_s: np.ndarray, knots_p: np.ndarray
+    ) -> Scenario:
+        """Pressure as a spline through (s, Pa) knots and no net current."""
+        return Scenario(
+            pressure_spline=(knots_s, knots_p),
+            peak_pressure_pa=1.0,
+            pressure_profile=(1.0,),
+        )
+
 
 @dataclasses.dataclass
 class MachineState:
@@ -320,6 +331,30 @@ class Twin:
                 pickle.dump(output, handle, protocol=pickle.HIGHEST_PROTOCOL)
         return output
 
+
+    def solve_profiles(
+        self,
+        config: machine.Configuration | str,
+        profiles,
+        resolution: Resolution = SCAN,
+        restart_from: vmecpp.VmecOutput | None = None,
+        pressure_scale: float = 1.0,
+        knots: int | None = None,
+        cache: bool = True,
+    ) -> vmecpp.VmecOutput:
+        """Solve at the kinetic profiles' own pressure carried as a spline."""
+        knots_s, knots_p = (
+            profiles.pressure_spline() if knots is None else profiles.pressure_spline(knots)
+        )
+        return self.solve(
+            self.state(
+                config,
+                scenario=Scenario.from_pressure_spline(knots_s, pressure_scale * knots_p),
+            ),
+            resolution,
+            restart_from=restart_from,
+            cache=cache,
+        )
 
     def solve_input(
         self,

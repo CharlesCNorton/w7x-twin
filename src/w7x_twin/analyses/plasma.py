@@ -3,32 +3,25 @@
 from __future__ import annotations
 
 import dataclasses
-import json
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
+from w7x_twin.analyses import _common
+from w7x_twin.analyses._common import arg, args, write_record
+from w7x_twin.hardware.walls import inside_contour
 from w7x_twin.mhd import diagnostics
-from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
+from w7x_twin.mhd.equilibrium import SCAN, Twin
 from w7x_twin.plasma import current, edge, kinetics, neoclassical, transport
+from w7x_twin.plasma.kinetics import log_gradient
 from w7x_twin.records import programmes
 
 #: The surface cache/monkes_er.dat was solved on, taken from the package so every
 #: entry that falls back to the single-surface table normalises the same way.
 REFERENCE_SURFACE = neoclassical.SINGLE_SURFACE
-MONKES_TABLE = Path("cache/monkes_er.dat")
-MONKES_RADIAL = Path(neoclassical.RADIAL_SCANS[0])
-RIPPLE_TABLE = Path(neoclassical.RIPPLE_TABLE)
 
-
-def load_coefficients():
-    """The per-surface drift-kinetic tables if they exist, else the one solved surface."""
-    profile = neoclassical.discover_monoenergetic_profile(MONKES_RADIAL)
-    if profile is not None:
-        return profile
-    return neoclassical.load_monoenergetic(MONKES_TABLE, REFERENCE_SURFACE)
+load_coefficients = _common.drift_kinetic_coefficients
 
 #: Ion temperature as a fraction of the electron temperature, matching the transport
 #: model's own ratio.
@@ -69,23 +62,10 @@ RAY_WAIST_M = 0.025
 RESONANCE_LAYER_T = 0.02
 
 
-def _inside_polygon(point_r, point_z, poly_r, poly_z):
-    """Crossing-number test of many points against one closed contour."""
-    z0 = poly_z[:, None]
-    z1 = np.roll(poly_z, -1)[:, None]
-    r0 = poly_r[:, None]
-    r1 = np.roll(poly_r, -1)[:, None]
-    straddles = (z0 > point_z[None, :]) != (z1 > point_z[None, :])
-    with np.errstate(divide="ignore", invalid="ignore"):
-        crossing = r0 + (point_z[None, :] - z0) * (r1 - r0) / (z1 - z0)
-    hits = straddles & (point_r[None, :] < crossing)
-    return (np.count_nonzero(hits, axis=0) % 2) == 1
-
-
 def flux_label_map(equilibrium, phi: float, points: int = 161):
     """s on an (R, Z) grid at one plane by innermost-containing-surface lookup, one outside the boundary."""
     surfaces = int(equilibrium.wout.ns)
-    r_edge, z_edge = diagnostics.flux_surface(equilibrium.wout, surfaces - 1, phi, 128)
+    r_edge, z_edge = diagnostics.boundary_cut(equilibrium.wout, phi, 128)
     r_axis = np.linspace(float(r_edge.min()) - 0.05, float(r_edge.max()) + 0.05, points)
     z_axis = np.linspace(float(z_edge.min()) - 0.05, float(z_edge.max()) + 0.05, points)
     grid_r, grid_z = np.meshgrid(r_axis, z_axis, indexing="ij")
@@ -93,7 +73,7 @@ def flux_label_map(equilibrium, phi: float, points: int = 161):
     label = np.ones(flat_r.shape)
     for surface in range(surfaces - 1, 0, -1):
         r_c, z_c = diagnostics.flux_surface(equilibrium.wout, surface, phi, 128)
-        inside = _inside_polygon(flat_r, flat_z, r_c, z_c)
+        inside = inside_contour(flat_r, flat_z, r_c, z_c)
         label[inside] = surface / (surfaces - 1)
     from scipy.interpolate import RegularGridInterpolator
 
@@ -179,9 +159,9 @@ def ray_traced_deposition(
 
 
 def run_deposition() -> int:
-    power = 1e6 * (float(sys.argv[1]) if len(sys.argv) > 1 else 5.0)
+    power = 1e6 * arg(1, float, 5.0)
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     equilibrium = twin.solve(twin.state("standard"), SCAN)
     analysis = diagnostics.analyse(equilibrium)
     print(f"{twin.geometry}")
@@ -226,10 +206,11 @@ def run_deposition() -> int:
     )
 
     rows = []
-    header = f"{'scheme':>26s} {'peak s':>7s} {'absorbed':>9s} {'note'}"
+    table = _common.Table(
+        ("scheme", ">26s"), ("peak s", "7.3f"), ("absorbed", "9.3f"), ("note", "s")
+    )
     print()
-    print(header)
-    print("-" * (len(header) + 20))
+    table.begin(extra=20)
 
     for label, deposition in (
         (
@@ -254,10 +235,7 @@ def run_deposition() -> int:
                 "profile_w": deposition.profile_w.tolist(),
             }
         )
-        print(
-            f"{label:>26s} {deposition.peak_s:7.3f} "
-            f"{deposition.absorbed_fraction:9.3f}  {deposition.note}"
-        )
+        table.row(label, deposition.peak_s, deposition.absorbed_fraction, deposition.note)
 
     # The same resonance reached along a traced ray: the launch is an aiming
     # assumption, the bending through the density it crosses is not, so where the
@@ -276,9 +254,9 @@ def run_deposition() -> int:
         rows.append({**ray_row, "peak_s": traced.peak_s,
                      "absorbed_fraction": traced.absorbed_fraction,
                      "note": traced.note, "profile_w": traced.profile_w.tolist()})
-        print(
-            f"{'electron cyclotron, ray':>26s} {traced.peak_s:7.3f} "
-            f"{traced.absorbed_fraction:9.3f}  {traced.note}"
+        table.row(
+            "electron cyclotron, ray", traced.peak_s, traced.absorbed_fraction,
+            traced.note,
         )
     else:
         rows.append({**ray_row, "peak_s": float("nan"), "absorbed_fraction": 0.0})
@@ -294,25 +272,21 @@ def run_deposition() -> int:
         f"{transport.critical_energy_ev(temperature)[-1] / 1e3:.1f} keV"
     )
 
-    DEPOSITION_OUT.parent.mkdir(parents=True, exist_ok=True)
-    DEPOSITION_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "heating_w": power,
-                "resonant_field_t": transport.resonant_field_t(),
-                "cutoff_density_m3": cutoff,
-                "beam_energy_ev": BEAM_ENERGY_EV,
-                "s": s.tolist(),
-                "field_t": field.tolist(),
-                "ion_power_fraction": ion.tolist(),
-                "electron_power_fraction": electron.tolist(),
-                "schemes": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        DEPOSITION_OUT,
+        {
+            "heating_w": power,
+            "resonant_field_t": transport.resonant_field_t(),
+            "cutoff_density_m3": cutoff,
+            "beam_energy_ev": BEAM_ENERGY_EV,
+            "s": s.tolist(),
+            "field_t": field.tolist(),
+            "ion_power_fraction": ion.tolist(),
+            "electron_power_fraction": electron.tolist(),
+            "schemes": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {DEPOSITION_OUT}")
     return 0
 
 
@@ -330,7 +304,7 @@ CENTRES = (0.95, 0.80, 0.60, 0.40, 0.20, 0.05)
 
 
 def run_density() -> int:
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     equilibrium = twin.solve(twin.state("standard"), SCAN)
     analysis = diagnostics.analyse(equilibrium)
     minor = analysis.minor_radius_m
@@ -348,10 +322,12 @@ def run_density() -> int:
     s = np.linspace(0.0, 1.0, DENSITY_SURFACES)
     edge_density = reference.density_edge_m3
 
-    header = f"{'source s':>9s} {'peaking':>8s} {'n(0) [m^-3]':>13s} {'inside published':>17s}"
+    table = _common.Table(
+        ("source s", "9.2f"), ("peaking", "8.3f"), ("n(0) [m^-3]", "13.3e"),
+        ("inside published", ">17s"),
+    )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
 
     rows = []
     for centre in CENTRES:
@@ -367,10 +343,7 @@ def run_density() -> int:
                 "inside_published": inside,
             }
         )
-        print(
-            f"{centre:9.2f} {solution.peaking:8.3f} {solution.density_m3[0]:13.3e} "
-            f"{'yes' if inside else 'no':>17s}"
-        )
+        table.row(centre, solution.peaking, solution.density_m3[0], "yes" if inside else "no")
 
     # The pinch is the one free parameter of the closure, so it is solved from the published
     # peaking rather than guessed: at a fixed diffusivity the peaking rises monotonically with
@@ -396,10 +369,11 @@ def run_density() -> int:
         f"pinch of {abs(pinch):.3f} m/s against a diffusivity of "
         f"{calibrated.diffusivity_m2_s:.2f} m2/s"
     )
-    header = f"{'source s':>9s} {'peaking':>8s} {'inside published':>17s}"
+    table = _common.Table(
+        ("source s", "9.2f"), ("peaking", "8.3f"), ("inside published", ">17s")
+    )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
     at_pinch = []
     for centre in CENTRES:
         solution = transport.peaking_for_source(
@@ -410,9 +384,7 @@ def run_density() -> int:
             {"source_centre_s": centre, "peaking": solution.peaking,
              "inside_published": inside}
         )
-        print(
-            f"{centre:9.2f} {solution.peaking:8.3f} {'yes' if inside else 'no':>17s}"
-        )
+        table.row(centre, solution.peaking, "yes" if inside else "no")
 
     # The evolution the pellets drive: from the flat-topped reference, a deposition
     # inside the separatrix marched in time until the peaking passes the published
@@ -460,36 +432,32 @@ def run_density() -> int:
         f"{high:.1f}"
     )
 
-    DENSITY_OUT.parent.mkdir(parents=True, exist_ok=True)
-    DENSITY_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "minor_radius_m": minor,
-                "throughput_per_s": THROUGHPUT,
-                "prescribed_peaking": reference.peaking(),
-                "published_band": [low, high],
-                "sources": rows,
-                "calibrated_pinch_m_s": pinch,
-                "sources_at_calibrated_pinch": at_pinch,
-                "gas_fuelled": {
-                    "ionisation_centroid_s": weighted,
-                    "peaking": gas.peaking,
-                    "inside_published": inside_gas,
-                },
-                "pellet_evolution": {
-                    "source_centre_s": 0.30,
-                    "initial_peaking": float(evolution["peaking"][0]),
-                    "final_peaking": float(evolution["peaking"][-1]),
-                    "time_to_published_s": float(reached),
-                    "times_s": [float(v) for v in evolution["times_s"]],
-                    "peaking": [float(v) for v in evolution["peaking"]],
-                },
+    write_record(
+        DENSITY_OUT,
+        {
+            "minor_radius_m": minor,
+            "throughput_per_s": THROUGHPUT,
+            "prescribed_peaking": reference.peaking(),
+            "published_band": [low, high],
+            "sources": rows,
+            "calibrated_pinch_m_s": pinch,
+            "sources_at_calibrated_pinch": at_pinch,
+            "gas_fuelled": {
+                "ionisation_centroid_s": weighted,
+                "peaking": gas.peaking,
+                "inside_published": inside_gas,
             },
-            indent=2,
-        )
+            "pellet_evolution": {
+                "source_centre_s": 0.30,
+                "initial_peaking": float(evolution["peaking"][0]),
+                "final_peaking": float(evolution["peaking"][-1]),
+                "time_to_published_s": float(reached),
+                "times_s": [float(v) for v in evolution["times_s"]],
+                "peaking": [float(v) for v in evolution["peaking"]],
+            },
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {DENSITY_OUT}")
     return 0
 
 
@@ -526,18 +494,7 @@ def solve_case(
     twin: Twin, profiles, heating_w: float, coefficients, ripple, scale: float
 ) -> list[dict]:
     """The ambipolar field across the profile of one operating point."""
-    knots_s, knots_p = profiles.pressure_spline()
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p),
-                peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", profiles)
 
     # The temperature profile the power balance returns, so the gradients driving the
     # field are the solved ones rather than the prescribed shape.
@@ -553,19 +510,15 @@ def solve_case(
     minor = float(equilibrium.wout.Aminor_p)
     radius = minor * np.sqrt(solution.s)
 
-    def gradient(values):
-        return np.gradient(np.log(np.maximum(values, 1e-30)), radius)
+    dln_n = log_gradient(solution.density_m3, radius)
+    dln_te = log_gradient(solution.electron_temperature_ev, radius)
+    dln_ti = log_gradient(solution.ion_temperature_ev, radius)
 
-    dln_n = gradient(solution.density_m3)
-    dln_te = gradient(solution.electron_temperature_ev)
-    dln_ti = gradient(solution.ion_temperature_ev)
-
-    header = (
-        f"{'s':>6s} {'Te [eV]':>9s} {'Ti [eV]':>9s} {'a/L_n':>7s} {'a/L_Te':>8s} "
-        f"{'roots [kV/m]':>26s} {'chosen':>9s}"
+    layout = _common.Table(
+        ("s", "6.3f"), ("Te [eV]", "9.0f"), ("Ti [eV]", "9.0f"), ("a/L_n", "7.2f"),
+        ("a/L_Te", "8.2f"), ("roots [kV/m]", ">26s"), ("chosen", "8.2f"),
     )
-    print(header)
-    print("-" * len(header))
+    layout.begin()
     rows = []
     for surface in EFIELD_SURFACES:
         index = int(np.argmin(np.abs(solution.s - surface)))
@@ -606,23 +559,19 @@ def solve_case(
                 "branch": branch,
             }
         )
-        print(
-            f"{rows[-1]['s']:6.3f} {electron_t:9.0f} {ion_t:9.0f} "
-            f"{rows[-1]['a_over_ln']:7.2f} {rows[-1]['a_over_lte']:8.2f} "
-            f"{', '.join(f'{r / 1e3:+.2f}' for r in roots) or 'none':>26s} "
-            f"{field / 1e3:8.2f}"
+        layout.row(
+            rows[-1]["s"], electron_t, ion_t, rows[-1]["a_over_ln"],
+            rows[-1]["a_over_lte"], ", ".join(f"{r / 1e3:+.2f}" for r in roots) or "none",
+            field / 1e3,
         )
     return rows
 
 
 def run_efield() -> int:
-    scale = float(sys.argv[1]) if len(sys.argv) > 1 else 1.0
-    twin = Twin(verbose=False)
+    scale = arg(1, float, 1.0)
+    twin = _common.twin()
     coefficients = load_coefficients()
-    stored = np.load(RIPPLE_TABLE)
-    ripple = neoclassical.EffectiveRipple(
-        s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-    )
+    ripple = neoclassical.load_ripple()
     print(f"{twin.geometry}")
 
     cases = []
@@ -648,18 +597,14 @@ def run_efield() -> int:
             else "every surface on the ion root"
         )
 
-    EFIELD_OUT.parent.mkdir(parents=True, exist_ok=True)
-    EFIELD_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "renormalisation": transport.PUBLISHED_ISS04_ENHANCEMENT,
-                "cases": cases,
-            },
-            indent=2,
-        )
+    write_record(
+        EFIELD_OUT,
+        {
+            "renormalisation": transport.PUBLISHED_ISS04_ENHANCEMENT,
+            "cases": cases,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {EFIELD_OUT}")
     return 0
 
 
@@ -679,26 +624,12 @@ RENORMALISATIONS = (1.0, 1.3)
 
 
 def run_transport() -> int:
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     profiles = kinetics.HIGH_PERFORMANCE
-    knots_s, knots_p = profiles.pressure_spline()
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p),
-                peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", profiles)
 
     coefficients = load_coefficients()
-    stored = np.load(RIPPLE_TABLE)
-    ripple = neoclassical.EffectiveRipple(
-        s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-    )
+    ripple = neoclassical.load_ripple()
     if isinstance(coefficients, neoclassical.MonoenergeticProfile):
         print(f"drift-kinetic tables on {len(coefficients)} flux surfaces")
         reference = coefficients.tables[
@@ -828,15 +759,7 @@ RADIAL_FIELD_V_M = 0.0
 
 
 
-def enclosed_current(equilibrium, s: np.ndarray, jdotb: np.ndarray) -> float:
-    """Toroidal current from <J.B>/B00 integrated over (dV/ds)/(2 pi R), in amperes."""
-    wout = equilibrium.wout
-    volume = np.abs(np.asarray(wout.vp)[1:])
-    volume = volume * float(wout.volume_p) / float(
-        np.trapezoid(volume, current.half_grid(int(wout.ns)))
-    )
-    area = volume / (2.0 * np.pi * float(wout.Rmajor_p))
-    return float(np.trapezoid(np.asarray(jdotb) / abs(float(wout.b0)) * area, s))
+enclosed_current = current.enclosed_current_a
 
 
 def ambipolar_field(equilibrium, profiles, coefficients, ripple) -> np.ndarray:
@@ -848,10 +771,9 @@ def ambipolar_field(equilibrium, profiles, coefficients, ripple) -> np.ndarray:
     electron = profiles.electron_temperature(s)
     ion = profiles.ion_temperature(s)
 
-    def logarithmic(values):
-        return np.gradient(np.log(np.maximum(values, 1e-30)), radius)
-
-    dln_n, dln_te, dln_ti = logarithmic(density), logarithmic(electron), logarithmic(ion)
+    dln_n = log_gradient(density, radius)
+    dln_te = log_gradient(electron, radius)
+    dln_ti = log_gradient(ion, radius)
     out = np.zeros_like(s)
     for index in range(len(s)):
         for table, weight in neoclassical.surface_tables(
@@ -899,14 +821,11 @@ def diffuse(equilibrium, s_target, jdotb, balance, profiles, samples: int = 121)
 
 
 def run_bootstrap() -> int:
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     profiles = kinetics.HIGH_PERFORMANCE
 
     coefficients = load_coefficients()
-    stored = np.load(RIPPLE_TABLE)
-    ripple = neoclassical.EffectiveRipple(
-        s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-    )
+    ripple = neoclassical.load_ripple()
     if isinstance(coefficients, neoclassical.MonoenergeticProfile):
         print(f"drift-kinetic tables on {len(coefficients)} flux surfaces")
     else:
@@ -949,18 +868,7 @@ def run_bootstrap() -> int:
     # would produce, and their edge transform rises from 0.878 to 0.952 across 0 to
     # 43 kA. A bootstrap current must therefore raise the edge transform here too;
     # passing the toroidal flux to the Redl formula with the wrong sign reverses it.
-    knots_s, knots_p = profiles.pressure_spline()
-    pressure_only = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p),
-                peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    pressure_only = twin.solve_profiles("standard", profiles)
     reference_iota = float(np.asarray(pressure_only.wout.iotaf)[-1])
 
     header = (
@@ -1143,30 +1051,26 @@ def run_bootstrap() -> int:
         f"remaining difference is"
     )
 
-    BOOTSTRAP_OUT.parent.mkdir(parents=True, exist_ok=True)
-    BOOTSTRAP_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "saturated": {
-                    label: {
-                        "total_current_a": solution.total_current_a,
-                        "mismatch": solution.mismatch,
-                    }
-                    for label, solution in results.items()
-                },
-                "attribution": attribution,
-                "redl_total_current_a": enclosed_current(equilibrium, s_redl, redl),
-                "diffused": diffused,
-                "measured_current_a": measured.value,
-                "measured_time_s": MEASURED_TIME_S,
-                "measured_source": measured.source,
-                "table_coverage": coverage,
+    write_record(
+        BOOTSTRAP_OUT,
+        {
+            "saturated": {
+                label: {
+                    "total_current_a": solution.total_current_a,
+                    "mismatch": solution.mismatch,
+                }
+                for label, solution in results.items()
             },
-            indent=2,
-        )
+            "attribution": attribution,
+            "redl_total_current_a": enclosed_current(equilibrium, s_redl, redl),
+            "diffused": diffused,
+            "measured_current_a": measured.value,
+            "measured_time_s": MEASURED_TIME_S,
+            "measured_source": measured.source,
+            "table_coverage": coverage,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {BOOTSTRAP_OUT}")
 
     wrong_way = [
         label
@@ -1193,28 +1097,15 @@ RENORMALISATION = transport.PUBLISHED_ISS04_ENHANCEMENT
 
 
 def run_coupled() -> int:
-    powers = [float(v) * 1e6 for v in sys.argv[1:]] or [2.0e6, 5.0e6, 10.0e6]
-    twin = Twin(verbose=False)
+    powers = [v * 1e6 for v in args(float)] or [2.0e6, 5.0e6, 10.0e6]
+    twin = _common.twin()
     profiles = kinetics.HIGH_PERFORMANCE
     coefficients = load_coefficients()
-    stored = np.load(RIPPLE_TABLE)
-    ripple = neoclassical.EffectiveRipple(
-        s=stored["s"], rho=stored["rho"], eps_32=stored["eps_32"]
-    )
+    ripple = neoclassical.load_ripple()
     print(f"{twin.geometry}")
     print(f"ISS04 x {RENORMALISATION}, radial electric field solved from ambipolarity")
 
-    knots_s, knots_p = profiles.pressure_spline()
-    reference = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    reference = twin.solve_profiles("standard", profiles)
     vacuum = twin.solve(twin.state("standard"), SCAN)
     minor = float(reference.wout.Aminor_p)
     chi_neo = build_neoclassical(coefficients, ripple, None, minor)
@@ -1302,18 +1193,11 @@ def run_coupled() -> int:
             f"{c['iota_edge']:13.5f} {s['iota_edge']:11.5f}"
         )
 
-    COUPLED_OUT.parent.mkdir(parents=True, exist_ok=True)
-    COUPLED_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "renormalisation": RENORMALISATION,
-                "cases": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        COUPLED_OUT,
+        {"renormalisation": RENORMALISATION, "cases": rows},
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {COUPLED_OUT}")
     return 0
 
 
@@ -1345,21 +1229,11 @@ def field_range(equilibrium, analysis, s):
 
 
 def run_computed() -> int:
-    power = 1e6 * (float(sys.argv[1]) if len(sys.argv) > 1 else 5.0)
+    power = 1e6 * arg(1, float, 5.0)
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     base = kinetics.HIGH_PERFORMANCE
-    knots_s, knots_p = base.pressure_spline()
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", base)
     analysis = diagnostics.analyse(equilibrium)
     minor = analysis.minor_radius_m
     print(f"{twin.geometry}")
@@ -1429,13 +1303,13 @@ def run_computed() -> int:
             heating=transport.Heating.from_deposition(power, deposition),
             anomalous=anomalous)
 
-    header = (
-        f"{'inputs':>24s} {'W [MJ]':>8s} {'tau_E [s]':>10s} {'over ISS04':>11s} "
-        f"{'T_e(0) [eV]':>12s} {'radiated':>9s} {'neo share':>10s}"
+    table = _common.Table(
+        ("inputs", ">24s"), ("W [MJ]", "8.3f"), ("tau_E [s]", "10.4f"),
+        ("over ISS04", "11.3f"), ("T_e(0) [eV]", "12.0f"), ("radiated", "9.4f"),
+        ("neo share", "10.4f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
 
     rows = []
     for label, keywords in cases.items():
@@ -1459,12 +1333,10 @@ def run_computed() -> int:
                 "neoclassical_fraction_on_axis": float(np.asarray(solution.neoclassical_fraction).ravel()[0]),
             }
         )
-        print(
-            f"{label:>24s} {solution.stored_energy_j / 1e6:8.3f} "
-            f"{solution.confinement_time_s:10.4f} {over:11.3f} "
-            f"{solution.electron_temperature_ev[0]:12.0f} "
-            f"{solution.radiated_fraction:9.4f} {float(np.asarray(solution.neoclassical_fraction).ravel()[0]):10.4f}",
-            flush=True,
+        table.row(
+            label, solution.stored_energy_j / 1e6, solution.confinement_time_s, over,
+            solution.electron_temperature_ev[0], solution.radiated_fraction,
+            float(np.asarray(solution.neoclassical_fraction).ravel()[0]),
         )
 
     reference = rows[0]
@@ -1476,24 +1348,20 @@ def run_computed() -> int:
             f"the confinement to {row['over_iss04']:.3f} times ISS04"
         )
 
-    COMPUTED_OUT.parent.mkdir(parents=True, exist_ok=True)
-    COMPUTED_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "heating_w": power,
-                "carbon_edge_fraction": CARBON,
-                "second_ion_fraction": SECOND_ION,
-                "second_ion_mass_amu": SECOND_MASS,
-                "deposition_peak_s": deposition.peak_s,
-                "deposition_absorbed_fraction": deposition.absorbed_fraction,
-                "anomalous_channel_available": anomalous is not None,
-                "cases": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        COMPUTED_OUT,
+        {
+            "heating_w": power,
+            "carbon_edge_fraction": CARBON,
+            "second_ion_fraction": SECOND_ION,
+            "second_ion_mass_amu": SECOND_MASS,
+            "deposition_peak_s": deposition.peak_s,
+            "deposition_absorbed_fraction": deposition.absorbed_fraction,
+            "anomalous_channel_available": anomalous is not None,
+            "cases": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {COMPUTED_OUT}")
     return 0
 
 
@@ -1505,7 +1373,6 @@ def run_computed() -> int:
 #     python -m w7x_twin transient [identifier]
 
 TRANSIENT_OUT = Path("results/plasma/transient_discharge.json")
-EXHAUST_RECORD = Path("results/exhaust/heat_flux.json")
 TIME_STEP_S = 1.0e-3
 DURATION_S = 6.0
 RECORD_EVERY = 20
@@ -1522,22 +1389,11 @@ MIMIC_CURRENT_A = (0.0, 11.0e3, 22.0e3, 32.0e3, 43.0e3)
 MIMIC_TRANSFORM = (0.87836, 0.89470, 0.91259, 0.93143, 0.95157)
 
 
-def layer_constants() -> tuple[float, float, float]:
-    """(connection length, incidence sine, wetted area) from the exhaust record."""
-    if EXHAUST_RECORD.exists():
-        stored = json.loads(EXHAUST_RECORD.read_text())
-        return (
-            float(stored.get("connection_length_m", 180.0)),
-            float(stored.get("incidence_sine", 0.035)),
-            float(stored.get("wetted", {}).get("area_m2", 0.72)),
-        )
-    return 180.0, 0.035, 0.72
+layer_constants = _common.layer_constants
 
 
 def run_transient() -> int:
-    import sys
-
-    identifier = sys.argv[1] if len(sys.argv) > 1 else "20180919.033"
+    identifier = arg(1, default="20180919.033")
     programme = programmes.get(identifier)
     ecrh = programme.measured["heating_power_ecrh_w"].value
     beam = (
@@ -1550,21 +1406,9 @@ def run_transient() -> int:
         ((switch, ecrh), (DURATION_S - switch, beam))
     )
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     profiles = kinetics.HIGH_PERFORMANCE
-    knots_s, knots_p = profiles.pressure_spline()
-    from w7x_twin.mhd.equilibrium import Scenario
-
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", profiles)
     analysis = diagnostics.analyse(equilibrium)
     minor = analysis.minor_radius_m
     major = analysis.major_radius_m
@@ -1694,20 +1538,18 @@ def run_transient() -> int:
             )
             axis_t.append(float(temperature[0]))
 
-    header = (
-        f"{'t [s]':>7s} {'P [MW]':>7s} {'W [MJ]':>8s} {'T_e(0)':>8s} {'T_sep':>7s} "
-        f"{'T_t':>7s} {'I [kA]':>8s} {'iota edge':>10s}"
+    table = _common.Table(
+        ("t [s]", "7.2f"), ("P [MW]", "7.2f"), ("W [MJ]", "8.3f"), ("T_e(0)", "8.0f"),
+        ("T_sep", "7.1f"), ("T_t", "7.2f"), ("I [kA]", "8.2f"), ("iota edge", "10.5f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
     for moment in (0.2, 0.8, 1.6, 1.8, 2.5, 4.0, 6.0):
         index = int(np.argmin(np.abs(np.asarray(times) - moment)))
-        print(
-            f"{times[index]:7.2f} {waveform.at(times[index]) / 1e6:7.2f} "
-            f"{energies[index] / 1e6:8.3f} {axis_t[index]:8.0f} "
-            f"{pedestals[index]:7.1f} {targets[index]:7.2f} "
-            f"{currents[index] / 1e3:8.2f} {transforms[index]:10.5f}"
+        table.row(
+            times[index], waveform.at(times[index]) / 1e6, energies[index] / 1e6,
+            axis_t[index], pedestals[index], targets[index], currents[index] / 1e3,
+            transforms[index],
         )
 
     # The march against the stationary solve it must relax to: the flat-top energy at
@@ -1737,33 +1579,29 @@ def run_transient() -> int:
         f"energy implies, the inductive time being {inductive:.1f} s"
     )
 
-    TRANSIENT_OUT.parent.mkdir(parents=True, exist_ok=True)
-    TRANSIENT_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "identifier": identifier,
-                "enhancement": ENHANCEMENT,
-                "time_step_s": TIME_STEP_S,
-                "layer": {
-                    "connection_length_m": connection,
-                    "incidence_sine": incidence,
-                    "wetted_area_m2": area,
-                },
-                "flat_top_energy_j": flat_top,
-                "stationary_energy_j": stationary,
-                "energy_settling_s": energy_settle,
-                "inductive_time_s": inductive,
-                "times_s": times,
-                "stored_energy_j": energies,
-                "pedestal_ev": pedestals,
-                "target_ev": targets,
-                "bootstrap_current_a": currents,
-                "edge_transform": transforms,
-                "axis_temperature_ev": axis_t,
+    write_record(
+        TRANSIENT_OUT,
+        {
+            "identifier": identifier,
+            "enhancement": ENHANCEMENT,
+            "time_step_s": TIME_STEP_S,
+            "layer": {
+                "connection_length_m": connection,
+                "incidence_sine": incidence,
+                "wetted_area_m2": area,
             },
-            indent=2,
-        )
+            "flat_top_energy_j": flat_top,
+            "stationary_energy_j": stationary,
+            "energy_settling_s": energy_settle,
+            "inductive_time_s": inductive,
+            "times_s": times,
+            "stored_energy_j": energies,
+            "pedestal_ev": pedestals,
+            "target_ev": targets,
+            "bootstrap_current_a": currents,
+            "edge_transform": transforms,
+            "axis_temperature_ev": axis_t,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {TRANSIENT_OUT}")
     return 0

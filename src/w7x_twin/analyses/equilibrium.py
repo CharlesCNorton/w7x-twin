@@ -16,6 +16,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+from w7x_twin.analyses import _common
+from w7x_twin.analyses._common import Table, arg, args, write_record
 from w7x_twin.hardware import coils as coil_geometry, machine
 from w7x_twin.magnetics import field, fieldlines
 from w7x_twin.magnetics.field import VacuumField
@@ -39,9 +41,12 @@ RESONANCE = (5, 6)
 RESOLUTION = SCAN
 
 
+SURVEY_OUT = Path("results/equilibrium/config_survey.json")
+
+
 def run_equilibrium() -> int:
-    twin = Twin(verbose=False)
-    keys = sys.argv[1:] or machine.all_keys()
+    twin = _common.twin()
+    keys = args() or machine.all_keys()
 
     rows = []
     for key in keys:
@@ -55,42 +60,44 @@ def run_equilibrium() -> int:
         d = diagnostics.analyse(output)
         rows.append((key, config, d))
 
-    header = (
-        f"{'configuration':24s} {'B0':>6s} {'Bbean':>6s} {'Btri':>6s} {'R':>7s} "
-        f"{'a':>6s} {'V':>7s} {'i_axis':>7s} {'i_edge':>7s} {'mirror%':>8s} "
-        f"{'well%':>7s}  resonances"
+    table = Table(
+        ("configuration", "24s"), ("B0", "6.3f"), ("Bbean", "6.3f"), ("Btri", "6.3f"),
+        ("R", "7.4f"), ("a", "6.4f"), ("V", "7.3f"), ("i_axis", "7.4f"),
+        ("i_edge", "7.4f"), ("mirror%", "8.3f"), ("well%", "7.3f"), ("resonances", "s"),
     )
-    print(header)
-    print("-" * len(header))
+    table.begin()
     for key, _config, d in rows:
-        print(
-            f"{key:24s} {d.b_axis_t:6.3f} {d.b_bean_t:6.3f} {d.b_triangle_t:6.3f} "
-            f"{d.major_radius_m:7.4f} {d.minor_radius_m:6.4f} "
-            f"{d.plasma_volume_m3:7.3f} {d.iota_axis:7.4f} {d.iota_edge:7.4f} "
-            f"{d.mirror_percent:8.3f} {100 * d.magnetic_well_depth:7.3f}  "
-            f"{','.join(d.resonances_crossed) or '-'}"
+        table.row(
+            key, d.b_axis_t, d.b_bean_t, d.b_triangle_t, d.major_radius_m,
+            d.minor_radius_m, d.plasma_volume_m3, d.iota_axis, d.iota_edge,
+            d.mirror_percent, 100 * d.magnetic_well_depth,
+            ",".join(d.resonances_crossed) or "-",
         )
 
-    out = Path("results/equilibrium")
-    out.mkdir(parents=True, exist_ok=True)
-    payload = {
-        key: {
-            "label": config.label,
-            "extcur": list(config.currents),
-            "source": config.source,
-            **{
-                k: (list(v) if isinstance(v, tuple) else v)
-                for k, v in d.as_dict().items()
-            },
+    # A subset run refreshes its own entries and leaves the rest of the record standing.
+    payload = {}
+    if SURVEY_OUT.exists() and set(keys) != set(machine.all_keys()):
+        payload = json.loads(SURVEY_OUT.read_text()).get("configurations", {})
+    payload.update(
+        {
+            key: {
+                "label": config.label,
+                "extcur": list(config.currents),
+                "source": config.source,
+                **{
+                    k: (list(v) if isinstance(v, tuple) else v)
+                    for k, v in d.as_dict().items()
+                },
+            }
+            for key, config, d in rows
         }
-        for key, config, d in rows
-    }
-    (out / "config_survey.json").write_text(
-        json.dumps(
-            {"geometry": twin.geometry.as_dict(), "configurations": payload}, indent=2
-        )
     )
-    print(f"\nwrote results/equilibrium/config_survey.json ({len(rows)} configurations)")
+    write_record(
+        SURVEY_OUT,
+        {"configurations": payload},
+        geometry=twin.geometry,
+        note=f" ({len(rows)} configurations)",
+    )
     return 0
 
 
@@ -102,21 +109,21 @@ PEAK_PRESSURES_PA = [0.0, 1e4, 2.5e4, 5e4, 7.5e4, 1e5, 1.5e5, 2e5, 2.5e5, 3e5]
 
 
 def run_beta() -> int:
-    configuration = sys.argv[1] if len(sys.argv) > 1 else "standard"
-    twin = Twin(verbose=False)
+    configuration = arg(1, default="standard")
+    twin = _common.twin()
 
     vacuum = twin.solve(twin.state(configuration), SCAN)
     previous = vacuum
     rows = []
 
-    header = (
-        f"{'p0 [kPa]':>9s} {'<beta>%':>9s} {'beta_ax%':>9s} {'W_MHD[MJ]':>10s} "
-        f"{'i_axis':>8s} {'i_edge':>8s} {'shift[mm]':>10s} {'inner[mm]':>10s} "
-        f"{'well%':>8s} {'V[m^3]':>8s} {'Mercier<0':>10s}"
+    table = Table(
+        ("p0 [kPa]", "9.1f"), ("<beta>%", "9.4f"), ("beta_ax%", "9.4f"),
+        ("W_MHD[MJ]", "10.3f"), ("i_axis", "8.4f"), ("i_edge", "8.4f"),
+        ("shift[mm]", "10.3f"), ("inner[mm]", "10.3f"), ("well%", "8.3f"),
+        ("V[m^3]", "8.3f"), ("Mercier<0", ">10s"),
     )
     print(f"configuration: {configuration}")
-    print(header)
-    print("-" * len(header))
+    table.begin()
 
     for peak in PEAK_PRESSURES_PA:
         state = twin.state(
@@ -130,12 +137,12 @@ def run_beta() -> int:
         previous = output
         d = diagnostics.analyse(output, vacuum_reference=vacuum)
         rows.append({"peak_pressure_pa": peak, **d.as_dict()})
-        print(
-            f"{peak / 1e3:9.1f} {100 * d.beta_total:9.4f} {100 * d.beta_axis:9.4f} "
-            f"{d.stored_energy_j / 1e6:10.3f} {d.iota_axis:8.4f} {d.iota_edge:8.4f} "
-            f"{1e3 * d.axis_shift_m:10.3f} {1e3 * d.axis_shift_in_boundary_m:10.3f} "
-            f"{100 * d.magnetic_well_depth:8.3f} "
-            f"{d.plasma_volume_m3:8.3f} {100 * d.mercier_unstable_fraction:9.1f}%"
+        table.row(
+            peak / 1e3, 100 * d.beta_total, 100 * d.beta_axis,
+            d.stored_energy_j / 1e6, d.iota_axis, d.iota_edge,
+            1e3 * d.axis_shift_m, 1e3 * d.axis_shift_in_boundary_m,
+            100 * d.magnetic_well_depth, d.plasma_volume_m3,
+            f"{100 * d.mercier_unstable_fraction:9.1f}%",
         )
 
     # The shift at the measured profiles: the digitised post-pellet density and both
@@ -144,24 +151,18 @@ def run_beta() -> int:
     # where the published one was measured.
     measured = measured_profile_case(twin, vacuum, previous)
 
-    out = Path("results/equilibrium")
-    out.mkdir(parents=True, exist_ok=True)
-    path = out / f"beta_scan_{configuration}.json"
-    path.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": configuration,
-                "steps": [
-                    {k: (list(v) if isinstance(v, tuple) else v) for k, v in r.items()}
-                    for r in rows
-                ],
-                "measured_profile": measured,
-            },
-            indent=2,
-        )
+    write_record(
+        Path("results/equilibrium") / f"beta_scan_{configuration}.json",
+        {
+            "configuration": configuration,
+            "steps": [
+                {k: (list(v) if isinstance(v, tuple) else v) for k, v in r.items()}
+                for r in rows
+            ],
+            "measured_profile": measured,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {path}")
     return 0
 
 
@@ -204,12 +205,7 @@ def measured_profile_case(twin: Twin, vacuum, restart) -> dict | None:
     scale = 1.0
     for label in ("as measured", "scaled to one per cent"):
         state = twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(s, scale * pressure),
-                peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
+            "standard", scenario=Scenario.from_pressure_spline(s, scale * pressure)
         )
         output = twin.solve(state, SCAN, restart_from=restart)
         d = diagnostics.analyse(output, vacuum_reference=vacuum)
@@ -239,14 +235,6 @@ def measured_profile_case(twin: Twin, vacuum, restart) -> dict | None:
 # -- figure ------------------------------------------------------------------------
 
 # Render the twin: coil set, flux surfaces, transform, field and pressure response.
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-
-from w7x_twin.hardware import machine
-from w7x_twin.mhd import diagnostics
-from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
 
 FIGURE_DIR = Path("results")
 #: phi = 0 is the bean cross section, 36 degrees the triangular one at the half period.
@@ -281,7 +269,7 @@ def plot_surface_3d(ax, wout, num_phi: int = 160, num_theta: int = 120) -> None:
     phi = np.linspace(0.0, 2.0 * np.pi, num_phi)
     xs, ys, zs = [], [], []
     for p in phi:
-        r, z = diagnostics.flux_surface(wout, int(wout.ns) - 1, p, num_theta)
+        r, z = diagnostics.boundary_cut(wout, p, num_theta)
         xs.append(r * np.cos(p))
         ys.append(r * np.sin(p))
         zs.append(z)
@@ -300,7 +288,7 @@ def plot_surface_3d(ax, wout, num_phi: int = 160, num_theta: int = 120) -> None:
 
 def run_figure() -> int:
     FIGURE_DIR.mkdir(exist_ok=True)
-    twin = Twin(verbose=False)
+    twin = _common.twin()
 
     solutions = {key: twin.solve(twin.state(key), SCAN) for key in CONFIGURATIONS}
     reference = solutions["standard"]
@@ -337,9 +325,7 @@ def run_figure() -> int:
         phi = np.deg2rad(angle)
         for r, z in diagnostics.cross_section(reference.wout, phi, num_surfaces=9):
             ax.plot(r, z, color="#2b6cb0", linewidth=0.8)
-        r, z = diagnostics.flux_surface(
-            reference.wout, int(reference.wout.ns) - 1, phi
-        )
+        r, z = diagnostics.boundary_cut(reference.wout, phi)
         ax.plot(r, z, color="#c94f2b", linewidth=1.8)
         ax.set_aspect("equal")
         ax.set_xlabel("R [m]")
@@ -401,15 +387,6 @@ def run_figure() -> int:
 
 # Dense edge trace at the bean plane resolving the island chain the strike lines ride.
 
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-
-from w7x_twin.magnetics import fieldlines
-from w7x_twin.mhd import diagnostics
-from w7x_twin.mhd.equilibrium import SCAN, Twin
-from w7x_twin.magnetics.field import VacuumField
-
 ISLANDS_DIR = Path("results")
 ISLAND_TURNS = 500
 
@@ -429,16 +406,14 @@ def draw(ax, poincare, colors, size: float) -> None:
 
 
 def run_islands() -> int:
-    key = sys.argv[1] if len(sys.argv) > 1 else "standard"
-    twin = Twin(verbose=False)
+    key = arg(1, default="standard")
+    twin = _common.twin()
     config = machine.get(key)
     vacuum = VacuumField(twin.response, config.as_extcur())
 
     r_axis, z_axis = fieldlines.find_axis(vacuum)
     equilibrium = twin.solve(twin.state(key), SCAN)
-    r_lcfs, z_lcfs = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
-    )
+    r_lcfs, z_lcfs = diagnostics.boundary_cut(equilibrium.wout, 0.0)
     half_width = r_lcfs.max() - r_axis
 
     # Two families: the confined core, and a dense fan through the edge where the
@@ -509,37 +484,25 @@ BETA_STEPS = 6
 
 
 def run_stability() -> int:
-    betas = (
-        tuple(float(a) / 100.0 for a in sys.argv[1:])
-        if len(sys.argv) > 1
-        else tuple(b / 100.0 for b in BETAS)
-    )
-    twin = Twin(verbose=False)
+    betas = tuple(a / 100.0 for a in args(float)) or tuple(b / 100.0 for b in BETAS)
+    twin = _common.twin()
     print(f"{twin.geometry}")
 
-    knots_s, knots_p = kinetics.HIGH_PERFORMANCE.pressure_spline(KNOTS)
-
-    header = (
-        f"{'beta [%]':>9s} {'Mercier':>8s} {'ballooning':>11s} {'max alpha':>10s} "
-        f"{'resonances':>11s} {'tearing':>8s} {'global unstable':>16s}"
+    table = Table(
+        ("beta [%]", "9.4f"), ("Mercier", "8.3f"), ("ballooning", "11.3f"),
+        ("max alpha", "10.3f"), ("resonances", "11d"), ("tearing", "8d"),
+        ("global unstable", "16d"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
 
     rows = []
     for target in betas:
         scale, beta, output = 1.0, float("nan"), None
         for _ in range(BETA_STEPS):
-            output = twin.solve(
-                twin.state(
-                    "standard",
-                    scenario=Scenario(
-                        pressure_spline=(knots_s, scale * knots_p),
-                        peak_pressure_pa=1.0, pressure_profile=(1.0,),
-                    ),
-                ),
-                SCAN,
+            output = twin.solve_profiles(
+                "standard", kinetics.HIGH_PERFORMANCE,
+                pressure_scale=scale, knots=KNOTS,
             )
             beta = float(output.wout.betatotal)
             if abs(beta - target) <= BETA_TOLERANCE * target:
@@ -602,12 +565,11 @@ def run_stability() -> int:
                 "tearing": tearing,
             }
         )
-        print(
-            f"{100 * beta:9.4f} {analysis.mercier_unstable_fraction:8.3f} "
-            f"{ballooning.unstable_fraction:11.3f} "
-            f"{float(np.nanmax(ballooning.alpha)):10.3f} {len(resonances):11d} "
-            f"{len(unstable):8d} "
-            f"{sum(1 for g in global_list if g.unstable):16d}"
+        table.row(
+            100 * beta, analysis.mercier_unstable_fraction,
+            ballooning.unstable_fraction, float(np.nanmax(ballooning.alpha)),
+            len(resonances), len(unstable),
+            sum(1 for g in global_list if g.unstable),
         )
 
     print()
@@ -617,13 +579,7 @@ def run_stability() -> int:
         f"{rows[-1]['ballooning_unstable_fraction']:.3f} across the scan"
     )
 
-    STABILITY_OUT.parent.mkdir(parents=True, exist_ok=True)
-    STABILITY_OUT.write_text(
-        json.dumps(
-            {"geometry": twin.geometry.as_dict(), "cases": rows}, indent=2
-        )
-    )
-    print(f"\nwrote {STABILITY_OUT}")
+    write_record(STABILITY_OUT, {"cases": rows}, geometry=twin.geometry)
     return 0
 
 
@@ -658,27 +614,13 @@ def layouts(turns: int, max_aspect: float = MAX_ASPECT) -> list[tuple[int, int]]
     return out
 
 
-def island_span(section, r_axis: float, z_axis: float) -> float:
-    """Radial extent the traced points occupy at the outboard midplane, in metres."""
-    near = np.abs(section.z - z_axis) < 0.02
-    outboard = near & (section.r > r_axis)
-    if not outboard.any():
-        return float("nan")
-    spans = []
-    for line in np.unique(section.line_index[outboard]):
-        here = outboard & (section.line_index == line)
-        if int(here.sum()) >= 4:
-            spans.append(float(section.r[here].max() - section.r[here].min()))
-    return float(max(spans)) if spans else float("nan")
-
-
 def run_winding() -> int:
-    wanted = [int(v) for v in sys.argv[1:]]
+    wanted = args(int)
     admissible = layouts(NON_PLANAR_TURNS)
     if wanted:
         admissible = [pair for pair in admissible if pair[0] in wanted]
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     print(f"{twin.geometry}")
     print(
         f"{NON_PLANAR_TURNS} turns at a {1e3 * coil_geometry.TURN_PITCH_M:.1f} mm pitch "
@@ -750,24 +692,20 @@ def run_winding() -> int:
         "not a free parameter"
     )
 
-    WINDING_OUT.parent.mkdir(parents=True, exist_ok=True)
-    WINDING_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "turns": NON_PLANAR_TURNS,
-                "pitch_m": coil_geometry.TURN_PITCH_M,
-                "conductor_size_m": coil_geometry.CONDUCTOR_SIZE_M,
-                "max_aspect": MAX_ASPECT,
-                "assumed_layout": list(assumed),
-                "layouts": rows,
-                "iota_edge_span": [float(iotas.min()), float(iotas.max())],
-                "island_span_mm": [float(np.nanmin(islands)), float(np.nanmax(islands))],
-            },
-            indent=2,
-        )
+    write_record(
+        WINDING_OUT,
+        {
+            "turns": NON_PLANAR_TURNS,
+            "pitch_m": coil_geometry.TURN_PITCH_M,
+            "conductor_size_m": coil_geometry.CONDUCTOR_SIZE_M,
+            "max_aspect": MAX_ASPECT,
+            "assumed_layout": list(assumed),
+            "layouts": rows,
+            "iota_edge_span": [float(iotas.min()), float(iotas.max())],
+            "island_span_mm": [float(np.nanmin(islands)), float(np.nanmax(islands))],
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {WINDING_OUT}")
     return 0
 
 
@@ -793,17 +731,14 @@ def solve_with(reference: Twin, coils_path: Path) -> tuple[object, float, float]
     iota_edge = float(np.asarray(equilibrium.wout.iotaf)[-1])
 
     vacuum = field.VacuumField(twin.response, twin.state("standard").currents)
-    r_axis, z_axis = fieldlines.find_axis(vacuum)
-    from w7x_twin.mhd import diagnostics
-
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
+    starts, r_axis, z_axis, _ = fieldlines.fan_starts(
+        vacuum, equilibrium.wout, LAYER, NUM_LINES
     )
-    starts = r_axis + np.linspace(*LAYER, NUM_LINES) * (float(r_lcfs.max()) - r_axis)
     section, _ = fieldlines.trace(
         vacuum, starts, np.full(starts.shape, z_axis), turns=WINDING_TURNS, plane_phi=0.0
     )
-    return equilibrium, iota_edge, 1e3 * island_span(section, r_axis, z_axis)
+    width, _ = fieldlines.midplane_island_span(section, r_axis, z_axis)
+    return equilibrium, iota_edge, 1e3 * width
 
 
 # -- ensemble ----------------------------------------------------------------------
@@ -816,10 +751,10 @@ ENSEMBLE_OUT = Path("results/equilibrium/ensemble.json")
 
 
 def run_ensemble() -> int:
-    configuration = sys.argv[1] if len(sys.argv) > 1 else "standard"
-    count = int(sys.argv[2]) if len(sys.argv) > 2 else 128
+    configuration = arg(1, default="standard")
+    count = arg(2, int, 128)
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     tolerances = ensemble.Tolerances()
     print(f"{configuration}: {count} samples on a Sobol sequence")
     print(f"  {twin.geometry}")
@@ -853,42 +788,36 @@ def run_ensemble() -> int:
     )
 
     print()
-    header = (
-        f"{'quantity':22s} {'median':>12s} {'+-':>9s} {'5th':>12s} {'95th':>12s} "
-        f"{'spread':>11s} {'relative':>9s}"
+    table = Table(
+        ("quantity", "22s"), ("median", "12.5g"), ("+-", "9.2g"), ("5th", "12.5g"),
+        ("95th", "12.5g"), ("spread", "11.4g"), ("relative", ">9s"),
     )
-    print(header)
-    print("-" * len(header))
+    table.begin()
     rows = []
     for label, unit, stats in result.rows():
         median = stats["median"]
         relative = stats["standard_deviation"] / abs(median) if median else float("nan")
-        name = f"{label} [{unit}]" if unit else label
-        print(
-            f"{name:22s} {median:12.5g} {stats['median_error']:9.2g} "
-            f"{stats['percentile_5']:12.5g} {stats['percentile_95']:12.5g} "
-            f"{stats['standard_deviation']:11.4g} {100 * relative:8.3f}%"
+        table.row(
+            f"{label} [{unit}]" if unit else label, median, stats["median_error"],
+            stats["percentile_5"], stats["percentile_95"],
+            stats["standard_deviation"], f"{100 * relative:8.3f}%",
         )
         rows.append({"quantity": label, "unit": unit, **stats})
 
-    ENSEMBLE_OUT.parent.mkdir(parents=True, exist_ok=True)
-    ENSEMBLE_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": configuration,
-                "samples": solved,
-                "failures": result.failures,
-                "seed": result.seed,
-                "sampling": "scrambled Sobol",
-                "dimensions": list(ensemble.DIMENSIONS),
-                "tolerances": dataclasses.asdict(tolerances),
-                "quantities": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        ENSEMBLE_OUT,
+        {
+            "configuration": configuration,
+            "samples": solved,
+            "failures": result.failures,
+            "seed": result.seed,
+            "sampling": "scrambled Sobol",
+            "dimensions": list(ensemble.DIMENSIONS),
+            "tolerances": dataclasses.asdict(tolerances),
+            "quantities": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {ENSEMBLE_OUT}")
     print(
         "The +- column is the bootstrap standard error of the median, which bounds the "
         "digits the interval supports."
@@ -1027,23 +956,13 @@ def bracketing_interfaces(count: int, resonant_s: float) -> tuple[float, ...]:
 
 
 def run_spec() -> int:
-    counts = tuple(int(a) for a in sys.argv[1:]) or VOLUMES
+    counts = tuple(args(int)) or VOLUMES
     if not SPEC.exists():
         raise SystemExit(f"no SPEC binary at {SPEC}")
     SPEC_WORK.mkdir(parents=True, exist_ok=True)
 
-    twin = Twin(verbose=False)
-    knots_s, knots_p = kinetics.HIGH_PERFORMANCE.pressure_spline()
-    output = twin.solve(
-        twin.state(
-            CONFIGURATION,
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        REFERENCE,
-    )
+    twin = _common.twin()
+    output = twin.solve_profiles(CONFIGURATION, kinetics.HIGH_PERFORMANCE, REFERENCE)
     transform = np.asarray(output.wout.iotaf)
     resonant = RESONANCE[0] / RESONANCE[1]
     grid = np.linspace(0.0, 1.0, len(transform))
@@ -1066,13 +985,13 @@ def run_spec() -> int:
         f"{RESONANCE[0]:.0f}/{RESONANCE[1]:.0f} at s = {resonant_s:.4f}"
     )
 
-    header = (
-        f"{'vols':>5s} {'interfaces':>16s} {'placed at':>32s} {'residual':>12s} "
-        f"{'restarts':>6s} {'island [mm]':>12s} {'seconds':>8s}"
+    table = Table(
+        ("vols", "5d"), ("interfaces", ">16s"), ("placed at", ">32s"),
+        ("residual", "12.4e"), ("restarts", "6d"), ("island [mm]", "12.2f"),
+        ("seconds", "8.1f"),
     )
     print()
-    print(header)
-    print("-" * len(header))
+    table.begin()
 
     rows = []
     for count, (placement, pinned) in [
@@ -1134,11 +1053,7 @@ def run_spec() -> int:
         shown = ", ".join(f"{v:.3f}" for v in interfaces[:4])
         if len(interfaces) > 4:
             shown += ", ..."
-        print(
-            f"{count:5d} {placement:>16s} {shown:>32s} {best:12.4e} {steps - 1:6d} "
-            f"{island:12.2f} {seconds:8.1f}",
-            flush=True,
-        )
+        table.row(count, placement, shown, best, steps - 1, island, seconds)
 
     finite = [r for r in rows if np.isfinite(r["force_residual"])]
     print()
@@ -1170,21 +1085,17 @@ def run_spec() -> int:
             "equilibrium asked two different questions"
         )
 
-    SPEC_OUT.parent.mkdir(parents=True, exist_ok=True)
-    SPEC_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "configuration": CONFIGURATION,
-                "resonance": list(RESONANCE),
-                "resonant_s": resonant_s,
-                "mpol": MPOL, "ntor": NTOR, "radial_resolution": RADIAL,
-                "cases": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        SPEC_OUT,
+        {
+            "configuration": CONFIGURATION,
+            "resonance": list(RESONANCE),
+            "resonant_s": resonant_s,
+            "mpol": MPOL, "ntor": NTOR, "radial_resolution": RADIAL,
+            "cases": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {SPEC_OUT}")
     return 0
 
 
@@ -1202,24 +1113,14 @@ INTERFACE_FLUX = (0.18, 0.45, 0.80)
 
 
 def run_stepped() -> int:
-    key = sys.argv[1] if len(sys.argv) > 1 else "op12a_22ka_mimic"
-    scale = float(sys.argv[2]) if len(sys.argv) > 2 else 1.0
+    key = arg(1, default="op12a_22ka_mimic")
+    scale = arg(2, float, 1.0)
     if not SPEC.exists():
         raise SystemExit(f"no SPEC executable at {SPEC}")
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     profiles = kinetics.HIGH_PERFORMANCE.scaled(scale)
-    knots_s, knots_p = profiles.pressure_spline()
-    output = twin.solve(
-        twin.state(
-            key,
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p), peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        REFERENCE,
-    )
+    output = twin.solve_profiles(key, profiles, REFERENCE)
     iota = np.asarray(output.wout.iotaf)
     resonance = RESONANCE[0] / RESONANCE[1]
     print(f"{twin.geometry}")
@@ -1273,9 +1174,7 @@ def run_stepped() -> int:
             "continuation": steps,
             "best_residual": best["force_residual"] if best else float("nan"),
         }
-        STEPPED_OUT.parent.mkdir(parents=True, exist_ok=True)
-        STEPPED_OUT.with_name("island_continuation.json").write_text(json.dumps(record, indent=2))
-        print(f"wrote {STEPPED_OUT.with_name('island_continuation.json')}")
+        write_record(STEPPED_OUT.with_name("island_continuation.json"), record)
         return 0
 
     result = written.path.with_suffix(".sp.h5")
@@ -1346,9 +1245,7 @@ def run_stepped() -> int:
         # The same measurement on the traced vacuum field, so the two are comparable.
         vacuum = VacuumField(twin.response, twin.state(key).currents)
         traced_axis_r, traced_axis_z = fieldlines.find_axis(vacuum)
-        r_lcfs, _ = diagnostics.flux_surface(
-            output.wout, int(output.wout.ns) - 1, 0.0
-        )
+        r_lcfs, _ = diagnostics.boundary_cut(output.wout, 0.0)
         # A narrow, densely sampled band about the resonant radius: an island a few
         # millimetres wide is missed entirely by a fan spanning the whole minor radius.
         half = r_lcfs.max() - traced_axis_r
@@ -1382,9 +1279,7 @@ def run_stepped() -> int:
     else:
         print("\nSPEC produced no output file; the record carries the input it was given")
 
-    STEPPED_OUT.parent.mkdir(parents=True, exist_ok=True)
-    STEPPED_OUT.write_text(json.dumps(record, indent=2))
-    print(f"\nwrote {STEPPED_OUT}")
+    write_record(STEPPED_OUT, record)
     return 0 if completed.returncode == 0 else 1
 
 
@@ -1419,7 +1314,7 @@ def run_koeberl() -> int:
     raxis = np.asarray(reference.variables["raxis_cc"][:], dtype=float)
     s_grid = np.linspace(0.0, 1.0, len(presf))
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     print(f"{twin.geometry}")
     print(
         "Koeberl reconstruction: extcur "
@@ -1427,12 +1322,9 @@ def run_koeberl() -> int:
         + f" A, beta {100 * scalar('betatotal'):.2f} %"
     )
 
-    scenario = Scenario(
-        pressure_spline=(s_grid[::4], presf[::4]),
-        peak_pressure_pa=1.0,
-        pressure_profile=(1.0,),
+    state = twin.state(
+        "standard", scenario=Scenario.from_pressure_spline(s_grid[::4], presf[::4])
     )
-    state = twin.state("standard", scenario=scenario)
     keys = ("npc1", "npc2", "npc3", "npc4", "npc5", "pca", "pcb")
     state = twin.with_currents(
         state, **{key: float(extcur[index]) for index, key in enumerate(keys)}
@@ -1463,17 +1355,13 @@ def run_koeberl() -> int:
         )
         print(f"  {name:24s} {ours:12.5f} against {theirs:12.5f} ({departure:+.2f} %)")
 
-    KOEBERL_OUT.parent.mkdir(parents=True, exist_ok=True)
-    KOEBERL_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "reference": "Koeberl et al., MaxEnt 2023, Zenodo 8095035",
-                "extcur_a": [float(v) for v in extcur],
-                "rows": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        KOEBERL_OUT,
+        {
+            "reference": "Koeberl et al., MaxEnt 2023, Zenodo 8095035",
+            "extcur_a": [float(v) for v in extcur],
+            "rows": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"wrote {KOEBERL_OUT}")
     return 0

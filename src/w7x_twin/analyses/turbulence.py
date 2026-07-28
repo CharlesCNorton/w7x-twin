@@ -6,12 +6,13 @@ import concurrent.futures
 import json
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
 import numpy as np
 
+from w7x_twin.analyses import _common
+from w7x_twin.analyses._common import args, write_record
 from w7x_twin.mhd.equilibrium import REFERENCE, SCAN, Twin
 from w7x_twin.plasma import kinetics, neoclassical, transport
 
@@ -249,9 +250,9 @@ def quasilinear(rows: list[dict], configuration: str, tprim: float) -> float:
 def run_gyrokinetic() -> int:
     if not STELLA.exists():
         raise SystemExit(f"no stella binary at {STELLA}")
-    configurations = sys.argv[1:] or ["standard", "high_mirror_ref167"]
+    configurations = args() or ["standard", "high_mirror_ref167"]
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     print(f"{twin.geometry}")
     print(f"flux tube on torflux {TORFLUX} over {FIELD_PERIODS} field periods")
 
@@ -262,11 +263,7 @@ def run_gyrokinetic() -> int:
             for ky in KY_VALUES:
                 rows.append(linear_case(wout, configuration, ky, tprim))
 
-    GYROKINETIC_OUT.parent.mkdir(parents=True, exist_ok=True)
-    GYROKINETIC_OUT.write_text(
-        json.dumps({"geometry": twin.geometry.as_dict(), "cases": rows}, indent=2)
-    )
-    print(f"\nwrote {GYROKINETIC_OUT}")
+    write_record(GYROKINETIC_OUT, {"cases": rows}, geometry=twin.geometry)
 
     print()
     header = f"{'configuration':22s} {'a/L_T':>6s} " + "".join(
@@ -418,9 +415,9 @@ def grid_case(
 def run_growth_rate_grid() -> int:
     if not STELLA.exists():
         raise SystemExit(f"no stella binary at {STELLA}")
-    configurations = sys.argv[1:] or ["standard", "op2_22ka"]
+    configurations = args() or ["standard", "op2_22ka"]
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     print(f"{twin.geometry}")
     total = (
         len(configurations) * len(GRID_SURFACES) * len(GRID_GRADIENTS)
@@ -835,15 +832,15 @@ def collect(configuration: str) -> list[dict]:
 
 
 def run_saturation() -> int:
-    snapshot = "collect" in sys.argv[1:]
-    arguments = [a for a in sys.argv[1:] if a != "collect"]
+    snapshot = "collect" in args()
+    arguments = [a for a in args() if a != "collect"]
     configuration = arguments[0] if arguments else "standard"
     if not GRID_RECORD.exists():
         raise SystemExit(f"no growth-rate grid at {GRID_RECORD}; run growth-rate-grid first")
     if not snapshot and not STELLA.exists():
         raise SystemExit(f"no stella binary at {STELLA}")
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     table = transport.GrowthRateTable.read(GRID_RECORD, configuration)
     equilibrium = twin.solve(twin.state(configuration), SCAN)
     minor = float(equilibrium.wout.Aminor_p)
@@ -977,11 +974,7 @@ def run_saturation() -> int:
     else:
         print("no run saturated, so no constant is measured")
 
-    CONSTANT_RECORD.parent.mkdir(parents=True, exist_ok=True)
-    CONSTANT_RECORD.write_text(
-        json.dumps({"geometry": twin.geometry.as_dict(), "points": points}, indent=2)
-    )
-    print(f"\nwrote {CONSTANT_RECORD}")
+    write_record(CONSTANT_RECORD, {"points": points}, geometry=twin.geometry)
     return 0
 
 
@@ -1001,9 +994,7 @@ POST_PELLET_POWER_W = 4.9e6
 
 
 def run_turbulence() -> int:
-    powers = [float(v) * 1e6 for v in sys.argv[1:]] or [
-        p * 1e6 for p in DEFAULT_POWERS
-    ]
+    powers = [v * 1e6 for v in args(float)] or [p * 1e6 for p in DEFAULT_POWERS]
     if not GRID_RECORD.exists():
         raise SystemExit(f"no growth-rate grid at {GRID_RECORD}; run growth_rate_grid.py")
     if not CONSTANT_RECORD.exists():
@@ -1014,7 +1005,7 @@ def run_turbulence() -> int:
     if response is None:
         raise SystemExit(f"{CONSTANT_RECORD} carries no measured points to respond from")
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     print(f"{twin.geometry}")
     print(
         f"growth rates on {len(table.surfaces)} surfaces x {len(table.gradients)} "
@@ -1126,26 +1117,22 @@ def run_turbulence() -> int:
         f"{reference['chi_turbulent_m2_s'][index]:.4f} m2/s"
     )
 
-    BALANCE_OUT.parent.mkdir(parents=True, exist_ok=True)
-    BALANCE_OUT.write_text(
-        json.dumps(
-            {
-                "geometry": twin.geometry.as_dict(),
-                "response_surfaces": [
-                    {
-                        "torflux": float(surface),
-                        "mixing_length_sum": cx.tolist(),
-                        "flux_gyrobohm": cq.tolist(),
-                    }
-                    for surface, (cx, cq) in zip(
-                        response.surfaces, response.curves, strict=True
-                    )
-                ],
-                "grid": str(GRID_RECORD),
-                "cases": rows,
-            },
-            indent=2,
-        )
+    write_record(
+        BALANCE_OUT,
+        {
+            "response_surfaces": [
+                {
+                    "torflux": float(surface),
+                    "mixing_length_sum": cx.tolist(),
+                    "flux_gyrobohm": cq.tolist(),
+                }
+                for surface, (cx, cq) in zip(
+                    response.surfaces, response.curves, strict=True
+                )
+            ],
+            "grid": str(GRID_RECORD),
+            "cases": rows,
+        },
+        geometry=twin.geometry,
     )
-    print(f"\nwrote {BALANCE_OUT}")
     return 0

@@ -224,6 +224,13 @@ def flux_surface(
     return r, z
 
 
+def boundary_cut(
+    wout: vmecpp.VmecWOut, phi: float, num_theta: int = 256
+) -> tuple[np.ndarray, np.ndarray]:
+    """(R, Z) of the outermost flux surface at toroidal angle ``phi``."""
+    return flux_surface(wout, int(wout.ns) - 1, phi, num_theta)
+
+
 def cross_section(
     wout: vmecpp.VmecWOut, phi: float, num_surfaces: int = 8, num_theta: int = 256
 ) -> list[tuple[np.ndarray, np.ndarray]]:

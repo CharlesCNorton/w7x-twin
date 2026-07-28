@@ -63,18 +63,6 @@ HEATING_W = 5.0e6
 ENHANCEMENT = 1.4
 
 
-def enclosed_current_a(output, s: np.ndarray, jdotb: np.ndarray) -> float:
-    """Toroidal current a parallel current density implies, in amperes."""
-    wout = output.wout
-    volume = np.abs(np.asarray(wout.vp))[1:]
-    grid = (np.arange(1, int(wout.ns)) - 0.5) / (int(wout.ns) - 1)
-    volume = volume * float(wout.volume_p) / float(np.trapezoid(volume, grid))
-    area = volume / (2.0 * np.pi * float(wout.Rmajor_p))
-    return float(
-        np.trapezoid(np.asarray(jdotb) / abs(float(wout.b0)) * area, s)
-    )
-
-
 def normal_samples(count: int, seed: int) -> tuple[np.ndarray, int]:
     """A scrambled Sobol sequence mapped to standard normals, the count raised to a power of two."""
     from scipy.stats import norm, qmc
@@ -194,11 +182,7 @@ def run(
                 * (1.0 + tolerances.sigma(tolerances.temperature_exponent) * draw[10]),
             )
             knots_s, knots_p = scaled.pressure_spline()
-            scenario = Scenario(
-                pressure_spline=(knots_s, knots_p),
-                peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            )
+            scenario = Scenario.from_pressure_spline(knots_s, knots_p)
         state = perturbed_state(
             twin, configuration, draw, tolerances, scenario, f"sample {index}"
         )
@@ -219,6 +203,7 @@ def run(
             try:
                 from w7x_twin.plasma import current as plasma_current
                 from w7x_twin.plasma import transport as plasma_transport
+                from w7x_twin.plasma.current import enclosed_current_a
 
                 power = HEATING_W * (
                     1.0 + tolerances.sigma(tolerances.heating_power) * draw[12]

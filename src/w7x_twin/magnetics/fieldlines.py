@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import dataclasses
+import json
+from pathlib import Path
 
 import numpy as np
 
@@ -81,6 +83,20 @@ class Strikes:
             key = (name, int(module[line]), "upper" if is_upper[line] else "lower")
             counts[key] = counts.get(key, 0) + 1
         return counts
+
+    @classmethod
+    def concatenate(cls, parts: "list[Strikes]") -> "Strikes":
+        """One record over several fans; the component names are the first fan's."""
+        return cls(
+            struck=np.concatenate([p.struck for p in parts]),
+            r=np.concatenate([p.r for p in parts]),
+            z=np.concatenate([p.z for p in parts]),
+            phi=np.concatenate([p.phi for p in parts]),
+            connection_length_m=np.concatenate([p.connection_length_m for p in parts]),
+            start_r=np.concatenate([p.start_r for p in parts]),
+            component=np.concatenate([p.component for p in parts]),
+            component_names=parts[0].component_names,
+        )
 
 
 def _derivatives(
@@ -310,6 +326,10 @@ def connection_lengths(
     )
 
 
+#: Axes already located this process, keyed on the field digest and the search inputs.
+_AXIS_MEMO: dict[str, tuple[float, float]] = {}
+
+
 def find_axis(
     vacuum: VacuumField,
     r_guess: float = 5.93,
@@ -318,8 +338,28 @@ def find_axis(
     iterations: int = 40,
     tolerance: float = 1e-8,
     steps_per_period: int = 120,
+    cache_dir: str | Path | None = "cache",
 ) -> tuple[float, float]:
-    """Magnetic axis as the return map's fixed point, by damped finite-difference Newton."""
+    """Magnetic axis as the return map's fixed point, by damped finite-difference Newton.
+
+    The axis is a pure function of the field, so it is memoised on the field digest, in
+    memory and under ``cache_dir``; pass ``cache_dir=None`` to search unconditionally.
+    """
+    key = (
+        f"{vacuum.digest()}_{plane_phi!r}_{r_guess!r}_{z_guess!r}"
+        f"_{iterations}_{tolerance!r}_{steps_per_period}"
+    )
+    if key in _AXIS_MEMO:
+        return _AXIS_MEMO[key]
+    path = Path(cache_dir) / "axes.json" if cache_dir is not None else None
+    stored: dict[str, list[float]] = {}
+    if path is not None and path.exists():
+        stored = json.loads(path.read_text())
+        if key in stored:
+            r, z = float(stored[key][0]), float(stored[key][1])
+            _AXIS_MEMO[key] = (r, z)
+            return r, z
+
     r, z = float(r_guess), float(z_guess)
     epsilon = 1e-4
 
@@ -354,4 +394,46 @@ def find_axis(
         except np.linalg.LinAlgError:
             break
         r, z = r + 0.5 * step[0], z + 0.5 * step[1]
+
+    _AXIS_MEMO[key] = (r, z)
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        stored[key] = [r, z]
+        staging = path.with_suffix(".json.tmp")
+        staging.write_text(json.dumps(stored, indent=0))
+        staging.replace(path)
     return r, z
+
+
+def fan_starts(
+    vacuum: VacuumField,
+    wout,
+    span: tuple[float, float],
+    count: int,
+    plane_phi: float = 0.0,
+) -> tuple[np.ndarray, float, float, float]:
+    """Launch radii across ``span`` in boundary-normalised units at one plane, with the
+    traced axis and the boundary's outboard radius they are measured against."""
+    from w7x_twin.mhd import diagnostics
+
+    r_axis, z_axis = find_axis(vacuum, plane_phi=plane_phi)
+    r_cut, _ = diagnostics.boundary_cut(wout, plane_phi)
+    outboard = float(r_cut.max())
+    starts = r_axis + np.linspace(*span, count) * (outboard - r_axis)
+    return starts, r_axis, z_axis, outboard
+
+
+def midplane_island_span(
+    section: Poincare, r_axis: float, z_axis: float, min_points: int = 4
+) -> tuple[float, int]:
+    """Largest per-line radial extent of section points at the outboard midplane, in
+    metres, with the number of lines measured; NaN where no line leaves enough points."""
+    outboard = (np.abs(section.z - z_axis) < 0.02) & (section.r > r_axis)
+    spans = []
+    for line in np.unique(section.line_index[outboard]):
+        here = outboard & (section.line_index == line)
+        if int(here.sum()) >= min_points:
+            spans.append(float(section.r[here].max() - section.r[here].min()))
+    if not spans:
+        return float("nan"), 0
+    return float(max(spans)), len(spans)

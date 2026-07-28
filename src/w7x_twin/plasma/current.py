@@ -37,6 +37,17 @@ def half_grid(ns: int) -> np.ndarray:
     return (np.arange(1, ns) - 0.5) / (ns - 1)
 
 
+def enclosed_current_a(output: vmecpp.VmecOutput, s: np.ndarray, jdotb: np.ndarray) -> float:
+    """Toroidal current a parallel current density implies: <J.B>/B00 over (dV/ds)/(2 pi R)."""
+    wout = output.wout
+    volume = np.abs(np.asarray(wout.vp))[1:]
+    volume = volume * float(wout.volume_p) / float(
+        np.trapezoid(volume, half_grid(int(wout.ns)))
+    )
+    area = volume / (2.0 * np.pi * float(wout.Rmajor_p))
+    return float(np.trapezoid(np.asarray(jdotb) / abs(float(wout.b0)) * area, s))
+
+
 def redl_geometry(
     output: vmecpp.VmecOutput, ntheta: int = 64, nphi: int = 65
 ) -> Geometry:

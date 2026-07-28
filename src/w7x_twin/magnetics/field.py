@@ -111,13 +111,56 @@ class VacuumField:
 
         weights = np.asarray(currents, dtype=float)
         shape = (self.num_phi, self.num_z, self.num_r)
-        self.b_r = (weights @ table.b_r).reshape(shape)
-        self.b_phi = (weights @ table.b_p).reshape(shape)
-        self.b_z = (weights @ table.b_z).reshape(shape)
+        # One (component, phi, z, r) block, so every interpolation corner is a single
+        # gather over all three components.
+        self.b = np.stack(
+            [
+                (weights @ table.b_r).reshape(shape),
+                (weights @ table.b_p).reshape(shape),
+                (weights @ table.b_z).reshape(shape),
+            ]
+        )
+        self._digest: str | None = None
 
         self.dr = (self.r_max - self.r_min) / (self.num_r - 1)
         self.dz = (self.z_max - self.z_min) / (self.num_z - 1)
         self.dphi = self.period / self.num_phi
+
+    @property
+    def b_r(self) -> np.ndarray:
+        return self.b[0]
+
+    @property
+    def b_phi(self) -> np.ndarray:
+        return self.b[1]
+
+    @property
+    def b_z(self) -> np.ndarray:
+        return self.b[2]
+
+    def with_added_field(
+        self, b_r: np.ndarray, b_phi: np.ndarray, b_z: np.ndarray
+    ) -> VacuumField:
+        """A copy carrying this field plus the given one on the same grid."""
+        total = copy.copy(self)
+        total.b = self.b + np.stack([b_r, b_phi, b_z])
+        total._digest = None
+        return total
+
+    def digest(self) -> str:
+        """Content hash of the contracted field and its grid, for caches keyed on it."""
+        if self._digest is None:
+            digest = hashlib.sha256(self.b.tobytes())
+            digest.update(
+                repr(
+                    (
+                        self.num_r, self.num_z, self.num_phi, self.num_field_periods,
+                        self.r_min, self.r_max, self.z_min, self.z_max,
+                    )
+                ).encode()
+            )
+            self._digest = digest.hexdigest()[:16]
+        return self._digest
 
     def __call__(
         self,
@@ -148,14 +191,12 @@ class VacuumField:
         tr, tz, tp = fr - ir, fz - iz, fp - np.floor(fp)
 
         ip1 = (ip + 1) % self.num_phi
-        out = []
-        for component in (self.b_r, self.b_phi, self.b_z):
-            acc = np.zeros_like(fr)
-            for p_index, wp in ((ip, 1 - tp), (ip1, tp)):
-                for dz_, wz in ((0, 1 - tz), (1, tz)):
-                    for dr_, wr in ((0, 1 - tr), (1, tr)):
-                        acc += wp * wz * wr * component[p_index, iz + dz_, ir + dr_]
-            out.append(np.where(inside, acc, np.nan))
+        acc = np.zeros((3,) + fr.shape)
+        for p_index, wp in ((ip, 1 - tp), (ip1, tp)):
+            for dz_, wz in ((0, 1 - tz), (1, tz)):
+                for dr_, wr in ((0, 1 - tr), (1, tr)):
+                    acc += (wp * wz * wr) * self.b[:, p_index, iz + dz_, ir + dr_]
+        out = np.where(inside, acc, np.nan)
         return out[0], out[1], out[2]
 
     def magnitude(self, r, phi, z) -> np.ndarray:

@@ -18,6 +18,11 @@ ELEMENTARY_CHARGE = 1.602176634e-19
 CARBON_Z = 6
 
 
+def log_gradient(values: np.ndarray, radius: np.ndarray) -> np.ndarray:
+    """d ln(values)/d(radius), the argument floored away from zero."""
+    return np.gradient(np.log(np.maximum(values, 1e-30)), radius)
+
+
 @dataclasses.dataclass(frozen=True)
 class MavrinFit:
     """Mavrin polynomial 10^F(X, Y) with X = log10 T_e[eV], Y = log10(n_e tau / 1e19) capped at 0."""

@@ -295,7 +295,8 @@ src/w7x_twin/plasma/edge.py the scrape-off layer: two-point closure, Lengyel rad
 src/w7x_twin/records/       programmes.py identified discharges, published quantities and the
                             digitised profiles; ensemble.py machine quantities as intervals
 src/w7x_twin/analyses/      one module per subsystem, one entry point per command in the
-                            table above; cli.py dispatches
+                            table above; _common.py session-cached inputs, arguments,
+                            tables and record writing; cli.py dispatches
 tools/                      one-shot preparation: tessellate_cad.py meshes the CAD release,
                             digitise_profiles.py reads the paper under PyMuPDF, render_hero.py
                             renders under Blender

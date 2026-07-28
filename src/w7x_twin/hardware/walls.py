@@ -62,24 +62,30 @@ class ResampledVessel:
     num_grid: int
 
     def outside(self, r: np.ndarray, z: np.ndarray, grid_index: int) -> np.ndarray:
-        """True outside the slice's contour by crossing-number test; non-finite points count outside."""
-        wall_r = self.r[grid_index % self.num_grid]
-        wall_z = self.z[grid_index % self.num_grid]
-
-        z0 = wall_z[:, None]
-        z1 = np.roll(wall_z, -1)[:, None]
-        r0 = wall_r[:, None]
-        r1 = np.roll(wall_r, -1)[:, None]
-
-        point_r = np.asarray(r)[None, :]
-        point_z = np.asarray(z)[None, :]
-
-        straddles = (z0 > point_z) != (z1 > point_z)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            crossing_r = r0 + (point_z - z0) * (r1 - r0) / (z1 - z0)
-        hits = straddles & (point_r < crossing_r)
-        inside = (np.count_nonzero(hits, axis=0) % 2) == 1
+        """True outside the slice's contour; non-finite points count outside."""
+        inside = inside_contour(
+            r, z, self.r[grid_index % self.num_grid], self.z[grid_index % self.num_grid]
+        )
         return ~inside | ~np.isfinite(np.asarray(r)) | ~np.isfinite(np.asarray(z))
+
+
+def inside_contour(
+    point_r: np.ndarray, point_z: np.ndarray, contour_r: np.ndarray, contour_z: np.ndarray
+) -> np.ndarray:
+    """True for each point inside one closed (R, Z) contour, by crossing-number test."""
+    z0 = contour_z[:, None]
+    z1 = np.roll(contour_z, -1)[:, None]
+    r0 = contour_r[:, None]
+    r1 = np.roll(contour_r, -1)[:, None]
+
+    point_r = np.asarray(point_r)[None, :]
+    point_z = np.asarray(point_z)[None, :]
+
+    straddles = (z0 > point_z) != (z1 > point_z)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        crossing_r = r0 + (point_z - z0) * (r1 - r0) / (z1 - z0)
+    hits = straddles & (point_r < crossing_r)
+    return (np.count_nonzero(hits, axis=0) % 2) == 1
 
 
 def load_vessel(path: str | Path, num_field_periods: int = 5) -> Vessel:

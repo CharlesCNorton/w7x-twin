@@ -387,23 +387,16 @@ def inside_boundary(
     """True inside the boundary, by crossing-number test at the nearest toroidal plane."""
     from w7x_twin.mhd import diagnostics
 
+    from w7x_twin.hardware.walls import inside_contour
+
     r = np.asarray(r, dtype=float)
     phi = np.mod(np.asarray(phi, dtype=float), 2.0 * np.pi)
     z = np.asarray(z, dtype=float)
     out = np.zeros(r.shape, dtype=bool)
     for angle in np.unique(phi):
-        wall_r, wall_z = diagnostics.flux_surface(
-            output.wout, int(output.wout.ns) - 1, float(angle), num_theta
-        )
+        wall_r, wall_z = diagnostics.boundary_cut(output.wout, float(angle), num_theta)
         here = phi == angle
-        z0, z1 = wall_z[:, None], np.roll(wall_z, -1)[:, None]
-        r0, r1 = wall_r[:, None], np.roll(wall_r, -1)[:, None]
-        point_r, point_z = r[here][None, :], z[here][None, :]
-        straddles = (z0 > point_z) != (z1 > point_z)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            crossing = r0 + (point_z - z0) * (r1 - r0) / (z1 - z0)
-        hits = straddles & (point_r < crossing)
-        out[here] = (np.count_nonzero(hits, axis=0) % 2) == 1
+        out[here] = inside_contour(r[here], z[here], wall_r, wall_z)
     return out
 
 

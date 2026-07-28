@@ -13,12 +13,13 @@ from pathlib import Path
 
 import numpy as np
 
+from w7x_twin.analyses import _common
 from w7x_twin.hardware import cad, coils as coil_geometry, machine, walls
 from w7x_twin.hardware.walls import base_name, load_vessel
 from w7x_twin.magnetics import field, fieldlines, plasma_response
 from w7x_twin.magnetics.field import VacuumField
 from w7x_twin.mhd import diagnostics
-from w7x_twin.mhd.equilibrium import SCAN, Scenario, Twin
+from w7x_twin.mhd.equilibrium import SCAN, Twin
 from w7x_twin.plasma import kinetics
 
 
@@ -452,7 +453,6 @@ def plasma_boundary() -> dict | None:
     """Released plasma-surface points against the VMEC boundary at each point's own toroidal angle."""
     try:
         from w7x_twin.mhd import diagnostics
-        from w7x_twin.mhd.equilibrium import SCAN, Twin
     except ImportError:
         return None
 
@@ -461,7 +461,7 @@ def plasma_boundary() -> dict | None:
     phi = np.mod(np.arctan2(points[:, 1], points[:, 0]), 2.0 * np.pi)
     height = points[:, 2]
 
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     equilibrium = twin.solve(twin.state("standard"), SCAN)
     surface = int(equilibrium.wout.ns) - 1
 
@@ -920,9 +920,9 @@ PATH_EVERY = 4
 
 
 def run_export_geometry() -> int:
-    key = sys.argv[1] if len(sys.argv) > 1 else "standard"
+    key = _common.arg(1, default="standard")
     coils_file = GEOMETRY_COILS_FILE if (Path("data") / GEOMETRY_COILS_FILE).exists() else "coils.w7x"
-    twin = Twin(coils_file=coils_file, verbose=False)
+    twin = _common.twin(coils_file=coils_file)
     config = machine.get(key)
     print(f"{config.label}, filaments from {coils_file}")
     print(f"  {twin.geometry}")
@@ -930,15 +930,14 @@ def run_export_geometry() -> int:
     state = twin.state(key)
     equilibrium = twin.solve(state, SCAN)
     wout = equilibrium.wout
-    ns = int(wout.ns)
     vacuum = VacuumField(twin.response, state.currents)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
 
     # Field lines through the island chain, kept in three dimensions rather than
     # reduced to a section, and stopped where they reach a component.
     r_axis, z_axis = fieldlines.find_axis(vacuum)
-    r_lcfs, _ = diagnostics.flux_surface(wout, ns - 1, 0.0)
+    r_lcfs, _ = diagnostics.boundary_cut(wout, 0.0)
     half_width = r_lcfs.max() - r_axis
     starts = r_axis + np.linspace(1.0, 1.32, ISLAND_LINES) * half_width
 
@@ -1150,19 +1149,7 @@ def auxiliary_block(twin: Twin, cache_dir) -> dict | None:
 
 def plasma_block(twin: Twin, grid, coarse_shape, strides) -> dict:
     """The plasma-current field on the coarsened grid, at the reference pressure."""
-    profiles = kinetics.HIGH_PERFORMANCE
-    knots_s, knots_p = profiles.pressure_spline()
-    equilibrium = twin.solve(
-        twin.state(
-            "standard",
-            scenario=Scenario(
-                pressure_spline=(knots_s, knots_p),
-                peak_pressure_pa=1.0,
-                pressure_profile=(1.0,),
-            ),
-        ),
-        SCAN,
-    )
+    equilibrium = twin.solve_profiles("standard", kinetics.HIGH_PERFORMANCE)
     beta = float(equilibrium.wout.betatotal)
     distribution = plasma_response.current_distribution(
         equilibrium,
@@ -1209,7 +1196,7 @@ def plasma_block(twin: Twin, grid, coarse_shape, strides) -> dict:
 
 def superconducting_agrees(twin: Twin) -> float:
     """Largest relative response difference of the seven main circuits between the extended and base coils files."""
-    base = Twin(verbose=False)
+    base = _common.twin()
     worst = 0.0
     for extended, plain in (
         (twin.response.b_r, base.response.b_r),
@@ -1229,10 +1216,8 @@ class DecimatedField:
     def __init__(self, source, stride_phi: int, stride_z: int, stride_r: int) -> None:
         self.num_field_periods = source.num_field_periods
         self.period = source.period
-        self.b_r = source.b_r[::stride_phi, ::stride_z, ::stride_r]
-        self.b_phi = source.b_phi[::stride_phi, ::stride_z, ::stride_r]
-        self.b_z = source.b_z[::stride_phi, ::stride_z, ::stride_r]
-        self.num_phi, self.num_z, self.num_r = self.b_r.shape
+        self.b = source.b[:, ::stride_phi, ::stride_z, ::stride_r]
+        self.num_phi, self.num_z, self.num_r = self.b.shape[1:]
         self.r_min = source.r_min
         self.z_min = source.z_min
         # Decimation keeps the first sample of each axis, so the last one moves in.
@@ -1249,19 +1234,15 @@ class DecimatedField:
 def strike_resolution(twin: Twin, candidates) -> list[dict]:
     """Median strike displacement between each candidate grid and the full one, in metres."""
     from w7x_twin.magnetics import fieldlines
-    from w7x_twin.hardware import walls
-    from w7x_twin.mhd import diagnostics
 
     state = twin.state("standard")
     full = field.VacuumField(twin.response, state.currents)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
     equilibrium = twin.solve(state, SCAN)
-    r_axis, z_axis = fieldlines.find_axis(full)
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
+    starts, r_axis, z_axis, _ = fieldlines.fan_starts(
+        full, equilibrium.wout, (1.0, 1.32), 40
     )
-    starts = r_axis + np.linspace(1.0, 1.32, 40) * (float(r_lcfs.max()) - r_axis)
 
     def strikes_of(traced):
         section, _ = fieldlines.trace(
@@ -1300,7 +1281,7 @@ def run_export_field() -> int:
     # One coils file for both blocks, so the page carries one geometry version. The
     # extended file's first seven circuits are the superconducting set.
     coils_file = AUXILIARY_COILS if (Path("data") / AUXILIARY_COILS).exists() else "coils.w7x"
-    twin = Twin(coils_file=coils_file, verbose=False)
+    twin = _common.twin(coils_file=coils_file)
     grid = twin.coils.grid
     table = twin.response
 
@@ -1434,16 +1415,14 @@ STRIKE_TURNS = 60
 def run_page_error() -> int:
     stored = json.loads(FIELD_OUT.read_text())
     strides = tuple(stored["strike_resolution"]["chosen"]["strides"])
-    twin = Twin(coils_file="coils.w7x_full", verbose=False)
+    twin = _common.twin(coils_file="coils.w7x_full")
     state = twin.state("standard")
     full = VacuumField(twin.response, state.currents)
     page_grid = DecimatedField(full, *strides)
-    vessel = load_vessel("data/vessel.part")
-    elements = walls.load_components("data/pfc")
+    vessel = _common.vessel()
+    elements = _common.components()
     equilibrium = twin.solve(state, SCAN)
-    r_lcfs, _ = diagnostics.flux_surface(
-        equilibrium.wout, int(equilibrium.wout.ns) - 1, 0.0
-    )
+    r_lcfs, _ = diagnostics.boundary_cut(equilibrium.wout, 0.0)
     print(f"{twin.geometry}")
     print(f"shipped strides {strides}, page tracer {PAGE_STEPS} steps per period")
 
@@ -1666,7 +1645,7 @@ def coil_current_for_field(twin: Twin, target_t: float = 2.5) -> float:
 
 
 def run_validate() -> int:
-    twin = Twin(verbose=False)
+    twin = _common.twin()
     coils = twin.coils
 
     section("Geometry")
