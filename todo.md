@@ -11,10 +11,9 @@
 9. Bring the gas-fuelled regime onto its measured 0.70 times the ISS04 scaling.
 10. Bring the solved temperature profiles inside the digitised uncertainty bands.
 11. Regenerate the profile-residual, computed-balance and turbulence-dependent discharge records once the computed transport channels are calibrated.
-12. Propagate the stated input tolerances through the headline comparisons with the ensemble machinery.
-13. Extend the saturation response, the drift-kinetic scan and the stepped-pressure solves to the remaining configurations of the library.
-14. Resolve the scrape-off layer with a three-dimensional edge transport model carrying neutrals and impurities beyond the two-point and Lengyel chain.
-15. Replace the reconstructed trim and control coil paths with the measured ones from IPP's coil database.
-16. Obtain the as-built coil filaments from IPP's coil database and substitute them for the as-designed set.
-17. Reproduce discharges whose parameters the publications do not state in numbers, from the machine's archived waveforms.
-18. Calibrate against archived waveforms and measured profiles, benchmark against reconstructed equilibria, validate forward-modelled diagnostic signals against archived ones, and predict a withheld campaign.
+12. Extend the saturation response, the drift-kinetic scan and the stepped-pressure solves to the remaining configurations of the library.
+13. Resolve the scrape-off layer with a three-dimensional edge transport model carrying neutrals and impurities beyond the two-point and Lengyel chain.
+14. Replace the reconstructed trim and control coil paths with the measured ones from IPP's coil database.
+15. Obtain the as-built coil filaments from IPP's coil database and substitute them for the as-designed set.
+16. Reproduce discharges whose parameters the publications do not state in numbers, from the machine's archived waveforms.
+17. Calibrate against archived waveforms and measured profiles, benchmark against reconstructed equilibria, validate forward-modelled diagnostic signals against archived ones, and predict a withheld campaign.

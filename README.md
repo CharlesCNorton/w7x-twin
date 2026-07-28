@@ -172,6 +172,12 @@ python -m w7x_twin fetch data
 VMEC++ links MKL for LAPACK. `run.sh` preloads the dispatch libraries, which some MKL
 packagings do not resolve, and sets `OMP_NUM_THREADS` and the package path.
 
+The twin reaches the solver through `vmecpp.run`, and a build with `-DVMECPP_USE_CUDA=ON`
+executes the same call device-resident: every equilibrium of the beta scans, the
+self-consistent bootstrap and coupled iterations and the ensemble draws then solves on the
+GPU. `run_batch` solves sets of equilibria in one CUDA context; a discharge reproduced
+from its waveform and a twin running in real time solve such sets.
+
 ## Use
 
 ```bash
@@ -310,7 +316,7 @@ DESC nor a CUDA-capable torch becomes a dependency of this package:
 
 `python -m w7x_twin validate` checks the machine-readable entries against published
 values and exits non-zero on any disagreement outside its stated band. The discharge
-comparison places 9 of 19 checks inside the accuracy their sources support;
+comparison places 13 of 22 checks inside the accuracy their sources support;
 `results/discharges/reproduce_discharge.json` carries every check and residual, and the
 topic accounts in [`docs/physics.md`](docs/physics.md) carry the tables.
 

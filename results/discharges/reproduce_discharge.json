@@ -10,6 +10,7 @@
     "components": "e234e9cda35f"
   },
   "renormalisation": 1.4,
+  "tolerance_propagation": "stored-energy checks carry the interval the ensemble tolerances support, sampled through a perturbed equilibrium and balance per draw; the exhaust checks carry the closure interval on the fixed traced mapping; trace-bound connection lengths, digitised-figure comparisons and the drift-kinetic shares carry none, since their inputs are the traced geometry and the published figures rather than the stated tolerances",
   "programmes": [
     {
       "identifier": "20180919.033",
@@ -25,7 +26,15 @@
           "unit": "J",
           "relative_residual": 1.760636016534895,
           "within_published_accuracy": false,
-          "source": "T. Klinger et al., Overview of first Wendelstein 7-X high-performance operation, Nucl. Fusion 59, 112004 (2019), open copy at pure.mpg.de item_3156726, figure 11 discussion"
+          "source": "R. C. Wolf et al., Performance of Wendelstein 7-X stellarator plasmas during the first divertor operation phase, Phys. Plasmas 26, 082504 (2019), open copy at pure.mpg.de item_3156726 component file_3158694, figure 11 discussion",
+          "interval": {
+            "samples": 32,
+            "median": 826154.0785716797,
+            "median_error": 4948.574194394789,
+            "percentile_5": 801413.8389009896,
+            "percentile_95": 858572.7545442383,
+            "fraction_inside_band": 0.0
+          }
         },
         {
           "quantity": "stored energy, beam phase",
@@ -34,7 +43,33 @@
           "unit": "J",
           "relative_residual": 2.2724298394950884,
           "within_published_accuracy": false,
-          "source": "T. Klinger et al., Overview of first Wendelstein 7-X high-performance operation, Nucl. Fusion 59, 112004 (2019), open copy at pure.mpg.de item_3156726, figure 11 discussion"
+          "source": "R. C. Wolf et al., Performance of Wendelstein 7-X stellarator plasmas during the first divertor operation phase, Phys. Plasmas 26, 082504 (2019), open copy at pure.mpg.de item_3156726 component file_3158694, figure 11 discussion",
+          "interval": {
+            "samples": 32,
+            "median": 1632737.2390751434,
+            "median_error": 10030.32930283616,
+            "percentile_5": 1584961.0670771294,
+            "percentile_95": 1696713.8386060614,
+            "fraction_inside_band": 0.0
+          }
+        },
+        {
+          "quantity": "stored energy at the ECRH end, digitised profiles",
+          "modelled": 367397.15255638986,
+          "measured": 300000.0,
+          "unit": "J",
+          "relative_residual": 0.2246571751879662,
+          "within_published_accuracy": false,
+          "source": "R. C. Wolf et al., Performance of Wendelstein 7-X stellarator plasmas during the first divertor operation phase, Phys. Plasmas 26, 082504 (2019), open copy at pure.mpg.de item_3156726 component file_3158694, figure 11 discussion"
+        },
+        {
+          "quantity": "stored energy at the beam-phase peak, digitised profiles",
+          "modelled": 711489.0838914614,
+          "measured": 500000.0,
+          "unit": "J",
+          "relative_residual": 0.42297816778292274,
+          "within_published_accuracy": false,
+          "source": "R. C. Wolf et al., Performance of Wendelstein 7-X stellarator plasmas during the first divertor operation phase, Phys. Plasmas 26, 082504 (2019), open copy at pure.mpg.de item_3156726 component file_3158694, figure 11 discussion"
         }
       ],
       "inverted": [
@@ -164,7 +199,15 @@
           "unit": "J",
           "relative_residual": 0.0006768307628605617,
           "within_published_accuracy": true,
-          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, figure 2, the diamagnetic loop"
+          "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, figure 2, the diamagnetic loop",
+          "interval": {
+            "samples": 32,
+            "median": 1088075.8049724717,
+            "median_error": 6529.468279196144,
+            "percentile_5": 1055472.6533509349,
+            "percentile_95": 1130752.2396197594,
+            "fraction_inside_band": 0.96875
+          }
         },
         {
           "quantity": "neoclassical share across the reported peaking range",
@@ -379,7 +422,15 @@
       "unit": "m",
       "relative_residual": 0.2190748258928681,
       "within_published_accuracy": true,
-      "source": "D. Bold et al., Parametrisation of target heat flux distribution and study of transport parameters for boundary modelling in W7-X, arXiv:2201.06341, figure 12, 2 to 4 cm over the divertor at 4.7 MW"
+      "source": "D. Bold et al., Parametrisation of target heat flux distribution and study of transport parameters for boundary modelling in W7-X, arXiv:2201.06341, figure 12, 2 to 4 cm over the divertor at 4.7 MW",
+      "interval": {
+        "samples": 64,
+        "median": 0.03644629190961786,
+        "median_error": 0.00028058035829957046,
+        "percentile_5": 0.03429921243005535,
+        "percentile_95": 0.03821380084460525,
+        "fraction_inside_band": 1.0
+      }
     },
     {
       "quantity": "strike-line width at the measured diffusivity",
@@ -397,7 +448,15 @@
       "unit": "W/m^2",
       "relative_residual": 0.04388465852757621,
       "within_published_accuracy": true,
-      "source": "O. Grulke et al., Overview of the first Wendelstein 7-X long pulse campaign with fully water-cooled plasma facing components, Nucl. Fusion 64, 112002 (2024), the maximum load density demonstrated on the divertor modules"
+      "source": "O. Grulke et al., Overview of the first Wendelstein 7-X long pulse campaign with fully water-cooled plasma facing components, Nucl. Fusion 64, 112002 (2024), the maximum load density demonstrated on the divertor modules",
+      "interval": {
+        "samples": 64,
+        "median": 6270418.9672842305,
+        "median_error": 72638.72903569043,
+        "percentile_5": 5609193.037235229,
+        "percentile_95": 6963060.518159713,
+        "fraction_inside_band": 0.890625
+      }
     },
     {
       "quantity": "wetted area",
@@ -406,7 +465,15 @@
       "unit": "m^2",
       "relative_residual": 0.0852046586798818,
       "within_published_accuracy": true,
-      "source": "O. Grulke et al., Overview of the first Wendelstein 7-X long pulse campaign with fully water-cooled plasma facing components, Nucl. Fusion 64, 112002 (2024), the area the load has to spread over for 10 MW steady state"
+      "source": "O. Grulke et al., Overview of the first Wendelstein 7-X long pulse campaign with fully water-cooled plasma facing components, Nucl. Fusion 64, 112002 (2024), the area the load has to spread over for 10 MW steady state",
+      "interval": {
+        "samples": 64,
+        "median": 1.080107112033423,
+        "median_error": 0.00454623679432328,
+        "percentile_5": 1.0143100339104478,
+        "percentile_95": 1.0991752853731285,
+        "fraction_inside_band": 1.0
+      }
     }
   ]
 }

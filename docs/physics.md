@@ -1493,6 +1493,15 @@ charge's twenty. Trace-bound connection lengths and digitised-figure comparisons
 no interval, since their inputs are the traced geometry and the drawn curves rather
 than the stated tolerances; the record names that coverage.
 
+What the intervals then say: the 20171207.006 stored energy carries 1.06 to 1.13 MJ
+with 97 per cent of its draws inside the published band, the strike-line width 34 to
+38 mm and the wetted area 1.01 to 1.10 m² entirely inside theirs, and the target heat
+flux 5.6 to 7.0 MW/m² with 89 per cent inside — the headline agreements survive the
+stated input tolerances. Both 20180919.033 stored energies put no draw inside their
+bands, so those disagreements are structural rather than tolerance-explicable, which
+is what the digitised-trajectory rows above locate in the published figure pair and
+the density the forward rows had to assume.
+
 | Quantity | Model | Published | Residual |
 |---|---|---|---|
 | Stored energy, 20171207.006 heating phase | 1.091 MJ | 1.09 MJ | +0.1 % |
@@ -1505,6 +1514,8 @@ than the stated tolerances; the record names that coverage.
 | Connection length inside the island | 211 m | 250 m | −15 % |
 | Strike-line width at the measured diffusivity | 34.9 mm | 2 to 4 cm | +16 % |
 | Strike-line width | 36.6 mm | 2 to 4 cm | +22 % |
+| Stored energy at the ECRH end, digitised profiles | 0.37 MJ | 0.30 MJ | +23 % |
+| Stored energy at the beam-phase peak, digitised profiles | 0.71 MJ | 0.50 MJ | +42 % |
 | Drift-kinetic share over the peaking range, 20171207.006 | 0.22 to 0.48 | 0.45 | band, inside |
 | Drift-kinetic share over the core region, 20181016.037 | 0.00 to 0.97 | 0.50 | band, inside |
 | Electron share over the core region, 20181016.037 | 0.00 to 0.23 | 0.30 | band, inside |
@@ -1515,7 +1526,11 @@ than the stated tolerances; the record names that coverage.
 | Stored energy, 20180919.033 heating phase | 0.83 MJ | 0.30 MJ | +176 % |
 | Stored energy, 20180919.033 beam phase | 1.64 MJ | 0.50 MJ | +227 % |
 
-Thirteen of the twenty sit inside the accuracy their sources support. The share
+Thirteen of the twenty-two sit inside the accuracy their sources support. The two
+digitised-trajectory rows integrate the kinetic energy from Wolf 2019 figure 11's own
+drawn profiles: 0.37 and 0.71 MJ against the 0.30 and 0.50 the text states, so the
+published figure pair and the published numbers already disagree by 23 to 42 per cent
+before any model enters, and part of the forward rows' residual belongs to that pair. The share
 comparisons come in two constructions because the sources state them two ways. The
 region rows read the share the way the papers phrase it — a fraction of the input power
 over the core region, forty to fifty per cent for the totals and twenty to forty for the
