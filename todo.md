@@ -1,11 +1,11 @@
 # Outstanding work
 
-1. Add an electron-scale wavenumber row to the growth-rate grid.
-2. Grow the nonlinear box beyond 24 by 16 modes, so the saturation measurement is not a box artifact.
-3. Certify box convergence of the nonlinear saturation on the outer surfaces.
-4. Extend the two trending mid-gradient nonlinear runs to saturation.
-5. Measure the saturation threshold between a/L_T = 1.5 and 3.0 on each surface.
-6. Measure the saturation response at pellet-level density gradients.
+1. Grow the nonlinear box beyond 24 by 16 modes, so the saturation measurement is not a box artifact.
+2. Certify box convergence of the nonlinear saturation on the outer surfaces.
+3. Extend the two trending mid-gradient nonlinear runs to saturation.
+4. Measure the saturation threshold between a/L_T = 1.5 and 3.0 on each surface.
+5. Measure the saturation response at pellet-level density gradients.
+6. Measure the nonlinear saturation response at electron scale, so the turbulent channel reads the ky = 15 row rather than summing only the ion scales the calibration box resolves.
 7. Calibrate the shear-quench constant against a nonlinear run carrying the radial electric field.
 8. Raise the computed channels' separation of the post-pellet and gas-fuelled regimes to the 1.86 the machine measures.
 9. Bring the gas-fuelled regime onto its measured 0.70 times the ISS04 scaling.
