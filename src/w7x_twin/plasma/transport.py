@@ -1467,8 +1467,8 @@ class GrowthRateTable:
         density_gradient: float | None = None,
         ky_max: float = 1.0,
     ) -> float:
-        """Sum of gamma / k_y^2 over growing modes with k_y <= ``ky_max``, the scales the
-        nonlinear calibration box resolves."""
+        """Sum of gamma / k_y^2 over growing modes with k_y <= ``ky_max``, the ion scales
+        the turbulent channel transports."""
         density = (
             float(np.mean(self.density_gradients))
             if density_gradient is None
@@ -1511,16 +1511,23 @@ class GrowthRateTable:
         return total
 
     def peak_growth(
-        self, surface: float, gradient: float, density_gradient: float | None = None
+        self,
+        surface: float,
+        gradient: float,
+        density_gradient: float | None = None,
+        ky_max: float = 1.0,
     ) -> float:
-        """Largest growth rate across the spectrum, the rate a sheared flow must beat."""
+        """Largest growth rate over the modes the channel transports, which is the rate a
+        sheared flow must beat; ``ky_max`` matches :meth:`mixing_length_sum`."""
         density = (
             float(np.mean(self.density_gradients))
             if density_gradient is None
             else float(density_gradient)
         )
         peak = 0.0
-        for k, _ in enumerate(self.wavenumbers):
+        for k, ky in enumerate(self.wavenumbers):
+            if ky > ky_max:
+                continue
             block = self.rates[:, :, :, k]
             per_surface = []
             for row in block:
