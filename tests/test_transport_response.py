@@ -22,6 +22,7 @@ def point(s, gradient, x, q, electron=None, box=(24, 16)):
         "saturated_ion_heat_flux_gyrobohm": q,
         "box": list(box),
         "seconds": 15000.0,
+        "nonlinear_saturation_state": "saturated",
     }
     if electron is not None:
         out["saturated_electron_heat_flux_gyrobohm"] = electron
@@ -53,6 +54,23 @@ def test_a_run_that_never_finished_is_not_a_measurement(tmp_path):
         )
     )
     assert response(0.25, 1.0) == pytest.approx(545.0)
+
+
+def test_only_a_saturated_run_anchors_the_response(tmp_path):
+    """A climbing run reads low by a varying factor, so the curve takes its low end from zero."""
+    climbing = point(0.25, 2.5, 1.5, 63.8)
+    climbing["nonlinear_saturation_state"] = "trending"
+    response = transport.MixingLengthResponse.read(
+        response_record(
+            tmp_path / "constant.json",
+            [climbing, point(0.25, 3.0, 2.0, 195.3), point(0.25, 4.5, 3.1, 299.9)],
+        )
+    )
+    # The climbing point is gone and the origin stands in, so the curve rises monotonically.
+    assert response(0.25, 0.0) == pytest.approx(0.0)
+    assert response(0.25, 1.0) == pytest.approx(97.65, rel=1e-3)
+    assert response(0.25, 2.0) == pytest.approx(195.3)
+    assert response(0.25, 3.1) == pytest.approx(299.9)
 
 
 def test_a_diverged_run_is_not_a_quiet_one(tmp_path):

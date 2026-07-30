@@ -1591,6 +1591,11 @@ class MixingLengthResponse:
             # enter it as a legitimate zero-flux anchor at whatever gradient drove it apart.
             if q < 0.0:
                 continue
+            # Only a saturated run measures a saturated flux. A still-climbing one reads low
+            # by a factor that is neither small nor constant, so it anchors nothing; the
+            # curve takes its low end from the origin instead.
+            if point.get("nonlinear_saturation_state") != "saturated":
+                continue
             electron = point.get("saturated_electron_heat_flux_gyrobohm", float("nan"))
             key = (
                 round(float(point["torflux"]), 6),
@@ -1603,13 +1608,18 @@ class MixingLengthResponse:
         by_surface: dict[float, list[tuple[float, float, float]]] = {}
         for (surface, _, _), (_, x, q, electron) in best.items():
             by_surface.setdefault(surface, []).append((x, q, electron))
-        surfaces = sorted(s for s, pts in by_surface.items() if len(pts) >= 2)
+        # One saturated run plus the origin already defines a curve.
+        surfaces = sorted(s for s, pts in by_surface.items() if len(pts) >= 1)
         if not surfaces:
             return None
         curves = []
         electron_curves = []
         for s in surfaces:
+            # No linear drive carries no turbulence, so the curve starts at the origin
+            # rather than at whichever near-threshold run happened to be measured.
             pts = sorted(by_surface[s])
+            if pts[0][0] > 0.0:
+                pts = [(0.0, 0.0, 0.0), *pts]
             x_values = np.array([p[0] for p in pts])
             ion = np.array([p[1] for p in pts])
             electron = np.array([p[2] for p in pts])
