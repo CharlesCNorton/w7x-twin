@@ -21,6 +21,7 @@ def point(s, gradient, x, q, electron=None, box=(24, 16)):
         "mixing_length_sum": x,
         "saturated_ion_heat_flux_gyrobohm": q,
         "box": list(box),
+        "seconds": 15000.0,
     }
     if electron is not None:
         out["saturated_electron_heat_flux_gyrobohm"] = electron
@@ -39,6 +40,19 @@ def test_the_largest_box_supersedes_the_grid_point(tmp_path):
     response = transport.MixingLengthResponse.read(record)
     assert response(0.25, 1.0) == pytest.approx(160.0)
     assert response(0.25, 0.3) == pytest.approx(0.0)
+
+
+def test_a_run_that_never_finished_is_not_a_measurement(tmp_path):
+    """A mid-flight snapshot carries no run time, and must not supersede a finished run."""
+    unfinished = point(0.25, 4.5, 1.0, 160.0, box=(48, 32))
+    del unfinished["seconds"]
+    response = transport.MixingLengthResponse.read(
+        response_record(
+            tmp_path / "constant.json",
+            [point(0.25, 1.5, 0.3, 0.0), point(0.25, 4.5, 1.0, 545.0), unfinished],
+        )
+    )
+    assert response(0.25, 1.0) == pytest.approx(545.0)
 
 
 def test_the_electron_curve_reads_its_own_channel_and_falls_back(tmp_path):

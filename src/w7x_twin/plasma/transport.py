@@ -1584,6 +1584,9 @@ class MixingLengthResponse:
             q = point.get("saturated_ion_heat_flux_gyrobohm")
             if x is None or q is None or not (np.isfinite(x) and np.isfinite(q)):
                 continue
+            # A point with no run time was snapshotted mid-flight and is not a measurement.
+            if point.get("seconds") is None:
+                continue
             electron = point.get("saturated_electron_heat_flux_gyrobohm", float("nan"))
             key = (
                 round(float(point["torflux"]), 6),
