@@ -1587,6 +1587,10 @@ class MixingLengthResponse:
             # A point with no run time was snapshotted mid-flight and is not a measurement.
             if point.get("seconds") is None:
                 continue
+            # A negative flux is a diverged run, not a quiet one; clamping it to zero would
+            # enter it as a legitimate zero-flux anchor at whatever gradient drove it apart.
+            if q < 0.0:
+                continue
             electron = point.get("saturated_electron_heat_flux_gyrobohm", float("nan"))
             key = (
                 round(float(point["torflux"]), 6),

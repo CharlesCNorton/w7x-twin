@@ -55,6 +55,22 @@ def test_a_run_that_never_finished_is_not_a_measurement(tmp_path):
     assert response(0.25, 1.0) == pytest.approx(545.0)
 
 
+def test_a_diverged_run_is_not_a_quiet_one(tmp_path):
+    """A negative flux means the run blew up; clamping it to zero would anchor the curve there."""
+    response = transport.MixingLengthResponse.read(
+        response_record(
+            tmp_path / "constant.json",
+            [
+                point(0.49, 1.5, 0.3, 0.0),
+                point(0.49, 3.0, 1.0, 27.8),
+                point(0.49, 3.0, 2.5, -1.4e16),
+            ],
+        )
+    )
+    # The diverged point is dropped, so the curve keeps the two real anchors.
+    assert response(0.49, 2.5) == pytest.approx(27.8)
+
+
 def test_the_electron_curve_reads_its_own_channel_and_falls_back(tmp_path):
     with_electrons = transport.MixingLengthResponse.read(
         response_record(

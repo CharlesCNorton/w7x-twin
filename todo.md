@@ -1,9 +1,9 @@
 # Outstanding work
 
-1. Grow the nonlinear box beyond 24 by 16 modes, so the saturation measurement is not a box artifact.
-2. Certify box convergence of the nonlinear saturation on the outer surfaces.
-3. Measure the saturation threshold between a/L_T = 1.5 and 3.0 on each surface.
-4. Measure the saturation response at pellet-level density gradients.
+1. Certify box convergence of the nonlinear saturation on the outer surfaces.
+2. Measure the saturation threshold between a/L_T = 1.5 and 3.0 on each surface, where three of six runs are still trending at tend 400.
+3. Measure the saturation response at pellet-level density gradients, where one run is trending and the other diverges at the default timestep.
+4. Decide whether a trending run's flux may anchor the saturation response, which currently admits an unconverged point out of order against the saturated ones either side.
 5. Measure the nonlinear saturation response at electron scale, so the turbulent channel reads the ky = 15 row rather than summing only the ion scales the calibration box resolves.
 6. Calibrate the shear-quench constant against a nonlinear run carrying the radial electric field.
 7. Raise the computed channels' separation of the post-pellet and gas-fuelled regimes to the 1.86 the machine measures.
