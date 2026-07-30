@@ -1,0 +1,34 @@
+{
+  "surface": 0.49,
+  "gradient": 3.0,
+  "density_gradient": 1.0,
+  "box": [24, 16],
+  "nzed": 48,
+  "gamma_max": 0.1930067425,
+  "measurement": "peak ion heat flux over t <= 100 against the unsheared run over the same window; none of the sheared cases saturates, so the growth phase is what is compared",
+  "reference_peak_flux_gyrobohm": 0.6088,
+  "points": [
+    {"g_exb": 0.0, "ratio_to_gamma_max": 0.0, "peak_flux_gyrobohm": 0.6088, "quench": 1.0},
+    {"g_exb": 0.001, "ratio_to_gamma_max": 0.0052, "peak_flux_gyrobohm": 0.57507, "quench": 0.945},
+    {"g_exb": 0.005, "ratio_to_gamma_max": 0.0259, "peak_flux_gyrobohm": 0.40849, "quench": 0.671},
+    {"g_exb": 0.02, "ratio_to_gamma_max": 0.1036, "peak_flux_gyrobohm": 0.0074975, "quench": 0.012}
+  ],
+  "suppressed_at_and_above": {
+    "g_exb": 0.05,
+    "note": "runs at 0.05, 0.1 and 0.2 decay from the seed without ever growing, so they carry no quench and are excluded"
+  },
+  "alpha_in_stella_normalisation": 10.0,
+  "normalisation": {
+    "stella": "gamma_E = (r/q) (dOmega_zeta/dr) (a/v_th), shear of the angular rotation frequency",
+    "module": "gamma_E = |d(E_r/B)/dr| a/v_ti, shear of the linear drift velocity, carrying no geometric factor",
+    "conversion": "r/(qR) = 0.343/(1.11 x 5.5) = 0.056 at s = 0.49",
+    "note": "the conversion assumes v_E = R Omega_zeta and q = 1/iota, so alpha carries about a factor of two"
+  },
+  "alpha": 0.56,
+  "balance_at_5_mw": [
+    {"alpha": 1.0, "over_iss04": 12.585},
+    {"alpha": 0.56, "over_iss04": 11.386},
+    {"alpha": 0.25, "over_iss04": 5.664},
+    {"alpha": 0.0, "over_iss04": 1.524}
+  ]
+}

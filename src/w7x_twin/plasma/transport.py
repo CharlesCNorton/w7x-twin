@@ -1712,8 +1712,9 @@ def local_turbulence(
     return chi
 
 
-#: Order-one weight of the flow shear against the fastest growing mode.
-SHEAR_QUENCH_ALPHA = 1.0
+#: Weight of the flow shear against the fastest growing mode, measured by nonlinear runs
+#: carrying imposed shear and converted to this module's own shearing-rate normalisation.
+SHEAR_QUENCH_ALPHA = 0.56
 PROTON_MASS_KG = 1.67262192e-27
 
 
