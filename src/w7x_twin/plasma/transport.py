@@ -367,7 +367,7 @@ def solve_split(
     heating: Heating,
     channels,
     edge_temperature_ev: float = 100.0,
-    chi_updates: int = 5,
+    chi_updates: int = 40,
     inner_iterations: int = 200,
     relaxation: float = 0.5,
     turbulent_local=None,
@@ -508,6 +508,11 @@ def solve_split(
     exchange_damping = 0.08
 
     quench_factors = None
+    # The diffusivities and the profile they are evaluated on settle on each other over
+    # these outer passes, and a fixed count can stop mid-oscillation: at five the quenched
+    # balance reads 11.4 times ISS04 against the 0.263 it converges to by ten. The loop
+    # therefore runs until the temperature stops moving, with chi_updates as the cap.
+    settled = None
     for update in range(chi_updates):
         pair = channels(s, electron, ion, n)
         chi_electron = np.nan_to_num(
@@ -573,6 +578,15 @@ def solve_split(
             ion = (1.0 - relaxation) * ion + relaxation * ion_new
             if moved < 1e-5:
                 break
+
+        drift = (
+            float(np.max(np.abs(electron - settled) / np.maximum(settled, 1.0)))
+            if settled is not None
+            else float("inf")
+        )
+        settled = electron.copy()
+        if drift < 1e-4:
+            break
 
     if fraction:
         from w7x_twin.plasma import kinetics
