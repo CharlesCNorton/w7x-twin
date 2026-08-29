@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import TYPE_CHECKING
 
 import numpy as np
-import vmecpp
-from simsopt.mhd.bootstrap import compute_trapped_fraction, j_dot_B_Redl
 
 from w7x_twin.mhd.equilibrium import Resolution, SCAN, Scenario, Twin
 from w7x_twin.plasma import neoclassical, transport
 from w7x_twin.plasma.kinetics import KineticProfiles
+
+# simsopt is imported where the Redl drive evaluates it, so the resistive diffusion
+# and the waveform closures stand without it installed.
+if TYPE_CHECKING:
+    import vmecpp
 
 
 # -- from bootstrap ---------------------------------------------------------------
@@ -52,6 +56,8 @@ def redl_geometry(
     output: vmecpp.VmecOutput, ntheta: int = 64, nphi: int = 65
 ) -> Geometry:
     """Evaluate the geometric inputs of the Redl formula on the VMEC half grid."""
+    from simsopt.mhd.bootstrap import compute_trapped_fraction
+
     wout = output.wout
     ns = int(wout.ns)
     s = half_grid(ns)
@@ -129,6 +135,8 @@ def redl_jdotb(
 ) -> tuple[np.ndarray, np.ndarray]:
     """Redl bootstrap <J.B> from the kinetic profiles on this equilibrium's geometry;
     ``helicity_n`` defaults to the measured dominant |B| symmetry direction."""
+    from simsopt.mhd.bootstrap import j_dot_B_Redl
+
     if helicity_n is None:
         helicity_n, _ = dominant_helicity(output)
     geometry = redl_geometry(output)

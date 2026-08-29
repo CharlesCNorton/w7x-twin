@@ -9,10 +9,16 @@ import json
 import numpy as np
 import pickle
 import time
-import vmecpp
 from pathlib import Path
+from typing import TYPE_CHECKING
+
 from w7x_twin.hardware import machine
 from w7x_twin.magnetics import field
+
+# Twin's methods import the solver where they call it, so the scenario, resolution
+# and machine-state records here are readable without it installed.
+if TYPE_CHECKING:
+    import vmecpp
 
 
 # -- from equilibrium -------------------------------------------------------------
@@ -143,6 +149,8 @@ class Twin:
         verbose: bool = True,
         epoch: str = machine.DEFAULT_EPOCH,
     ) -> None:
+        import vmecpp
+
         self.data_dir = Path(data_dir)
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -234,6 +242,8 @@ class Twin:
     def build_input(
         self, state: MachineState, resolution: Resolution
     ) -> vmecpp.VmecInput:
+        import vmecpp
+
         vmec_input = copy.deepcopy(self._template)
 
         if len(state.currents) != self.coils.num_circuits:
@@ -293,6 +303,8 @@ class Twin:
         restart_from: vmecpp.VmecOutput | None = None,
         cache: bool = True,
     ) -> vmecpp.VmecOutput:
+        import vmecpp
+
         key = f"eq_{self._field_digest}_{state.digest()}_{resolution.digest()}"
         path = self.cache_dir / f"{key}.pkl"
         if cache and path.exists():
@@ -364,6 +376,8 @@ class Twin:
         cache: bool = True,
     ) -> vmecpp.VmecOutput:
         """Solve a prepared input, cached under an explicit key."""
+        import vmecpp
+
         path = self.cache_dir / f"eq_{self._field_digest}_{key}.pkl"
         if cache and path.exists():
             if self.verbose:

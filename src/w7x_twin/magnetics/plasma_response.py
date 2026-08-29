@@ -7,9 +7,13 @@ import numpy as np
 import os
 import subprocess
 import time
-import vmecpp
 from pathlib import Path
+from typing import TYPE_CHECKING
+
 from w7x_twin.magnetics.field import FieldGrid
+
+if TYPE_CHECKING:
+    import vmecpp
 
 
 # -- from plasma_response ---------------------------------------------------------
@@ -347,6 +351,12 @@ def field_at_points_gpu(
     softening: float | None = None,
 ) -> np.ndarray:
     """The same integral through the GPU worker; ``interpreter`` is a python with CUDA torch."""
+    if not Path(interpreter).exists():
+        raise FileNotFoundError(
+            f"no interpreter at {interpreter}. The volume integral runs in another "
+            "process so a CUDA-capable torch is not a dependency of this package; "
+            "name one with W7X_TWIN_GPU_PYTHON, or leave it unset to sum on the CPU."
+        )
     work_dir = Path(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
     request = work_dir / "_biot_savart_in.npz"
@@ -370,7 +380,14 @@ def field_at_points_gpu(
     )
     if completed.returncode != 0:
         raise RuntimeError(
-            f"GPU Biot-Savart failed:\n{completed.stdout}\n{completed.stderr}"
+            f"the GPU Biot-Savart worker exited {completed.returncode} on "
+            f"{currents.num_sources} sources and {len(points)} points.\n"
+            f"  {interpreter} -m w7x_twin.magnetics._biot_savart_gpu {request} {response}\n"
+            + "\n".join(completed.stderr.strip().splitlines()[-12:])
+        )
+    if not response.exists():
+        raise RuntimeError(
+            f"the GPU Biot-Savart worker exited cleanly but wrote no {response.name}"
         )
     field = np.load(response)["field"]
     request.unlink(missing_ok=True)

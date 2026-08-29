@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import TYPE_CHECKING
+
 import numpy as np
-import vmecpp
+
+if TYPE_CHECKING:
+    import vmecpp
 
 
 # -- from diagnostics -------------------------------------------------------------

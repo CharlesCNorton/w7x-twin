@@ -6,8 +6,11 @@ import dataclasses
 import numpy as np
 import shutil
 import subprocess
-import vmecpp
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import vmecpp
 
 
 # -- from neoclassical ------------------------------------------------------------
@@ -38,6 +41,12 @@ def effective_ripple(
     verbose: bool = True,
 ) -> EffectiveRipple:
     """Effective ripple profile via the DESC worker; ``interpreter`` is a python with DESC."""
+    if not Path(interpreter).exists():
+        raise FileNotFoundError(
+            f"no interpreter at {interpreter}. The bounce averaging runs in another "
+            "process so DESC is not a dependency of this package; install it in its "
+            "own environment and name that environment's python here."
+        )
     work_dir = Path(work_dir)
     work_dir.mkdir(parents=True, exist_ok=True)
     wout = work_dir / f"wout_{tag}.nc"
@@ -60,7 +69,14 @@ def effective_ripple(
     )
     if completed.returncode != 0:
         raise RuntimeError(
-            f"effective ripple failed:\n{completed.stdout}\n{completed.stderr}"
+            f"the DESC effective-ripple worker exited {completed.returncode} on "
+            f"{num_surfaces} surfaces of {wout.name}.\n"
+            f"  {interpreter} -m w7x_twin.plasma._effective_ripple_desc {wout} {result}\n"
+            + "\n".join(completed.stderr.strip().splitlines()[-12:])
+        )
+    if not result.exists():
+        raise RuntimeError(
+            f"the DESC effective-ripple worker exited cleanly but wrote no {result.name}"
         )
     if verbose:
         print(completed.stdout.strip())

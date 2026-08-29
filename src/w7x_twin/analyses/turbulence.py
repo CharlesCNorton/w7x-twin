@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -16,8 +17,13 @@ from w7x_twin.analyses._common import args, write_record
 from w7x_twin.mhd.equilibrium import REFERENCE, SCAN, Twin
 from w7x_twin.plasma import kinetics, neoclassical, transport
 
-#: The stella binary every run shells out to.
-STELLA = Path.home() / "src/stella/build/gnu/COMPILATION/stella"
+#: The stella binary every run shells out to. stella is hand-built, so the environment
+#: names it; the default is where its own build instructions leave it.
+STELLA = Path(
+    os.environ.get(
+        "W7X_TWIN_STELLA", Path.home() / "src/stella/build/gnu/COMPILATION/stella"
+    )
+)
 #: Poloidal extent of the flux tube, in field periods; W7-X tubes need several to close.
 FIELD_PERIODS = 5.0
 #: Simulation time of a linear run; autostop ends one sooner once its growth rate settles.

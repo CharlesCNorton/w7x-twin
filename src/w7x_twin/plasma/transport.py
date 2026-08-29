@@ -5,11 +5,14 @@ from __future__ import annotations
 import dataclasses
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-import vmecpp
 
 from w7x_twin.plasma.kinetics import ELEMENTARY_CHARGE, KineticProfiles
+
+if TYPE_CHECKING:
+    import vmecpp
 
 ELECTRON_MASS = 9.1093837015e-31
 PROTON_MASS = 1.67262192369e-27

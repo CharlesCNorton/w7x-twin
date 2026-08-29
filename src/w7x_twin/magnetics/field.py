@@ -7,15 +7,23 @@ import dataclasses
 import hashlib
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-import vmecpp
 
 from w7x_twin.hardware.machine import CoilSet, FieldGrid
+
+# The two functions that build a response table import the solver where they call it;
+# the contraction and interpolation below read plain arrays, so the tracer stands
+# without it installed.
+if TYPE_CHECKING:
+    import vmecpp
 
 # -- from field -------------------------------------------------------------------
 
 def makegrid_parameters(grid: FieldGrid) -> vmecpp.MakegridParameters:
+    import vmecpp
+
     return vmecpp.MakegridParameters(
         normalize_by_currents=grid.normalize_by_currents,
         assume_stellarator_symmetry=grid.stellarator_symmetric,
@@ -56,6 +64,8 @@ def build_response_table(
     verbose: bool = True,
 ) -> vmecpp.MagneticFieldResponseTable:
     """Compute the per-circuit vacuum field response, caching it on disk."""
+    import vmecpp
+
     grid = grid or coils.grid
     params = makegrid_parameters(grid)
 

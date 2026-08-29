@@ -6,9 +6,12 @@ from __future__ import annotations
 import dataclasses
 import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
-import vmecpp
+
+if TYPE_CHECKING:
+    import vmecpp
 
 MU0 = 4.0e-7 * np.pi
 
