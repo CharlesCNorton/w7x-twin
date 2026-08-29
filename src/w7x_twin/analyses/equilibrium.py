@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -26,9 +27,13 @@ from w7x_twin.mhd.equilibrium import REFERENCE, SCAN, Scenario, Twin
 from w7x_twin.plasma import kinetics
 from w7x_twin.records import ensemble
 
-#: The SPEC executable and the directory the stepped-pressure solves run in.
-SPEC = Path.home() / "src/SPEC/build/build/bin/xspec"
-SPEC_WORK = Path("cache/spec")
+#: The SPEC executable and the directory the stepped-pressure solves run in. SPEC is
+#: hand-built, so the environment names it; the default is where its own build
+#: instructions leave it.
+SPEC = Path(
+    os.environ.get("W7X_TWIN_SPEC", Path.home() / "src/SPEC/build/build/bin/xspec")
+)
+SPEC_WORK = Path(os.environ.get("W7X_TWIN_SPEC_WORK", "cache/spec"))
 #: The resonance the stepped-pressure island sits on; the OP1.2a mimic tapers cross
 #: 5/6 inside the plasma.
 RESONANCE = (5, 6)
@@ -237,6 +242,8 @@ def measured_profile_case(twin: Twin, vacuum, restart) -> dict | None:
 # Render the twin: coil set, flux surfaces, transform, field and pressure response.
 
 FIGURE_DIR = Path("results")
+#: Where the rendered figures live, which is where the README displays them from.
+DOCS_DIR = Path("docs")
 #: phi = 0 is the bean cross section, 36 degrees the triangular one at the half period.
 PLANES_DEG = (0.0, 18.0, 36.0)
 PLANE_NAMES = ("bean", "intermediate", "triangular")
@@ -377,7 +384,8 @@ def run_figure() -> int:
         "Wendelstein 7-X digital twin: free-boundary VMEC++ from the IPP coil set",
         fontsize=13,
     )
-    path = FIGURE_DIR / "w7x_twin_overview.png"
+    DOCS_DIR.mkdir(exist_ok=True)
+    path = DOCS_DIR / "w7x_twin_overview.png"
     fig.savefig(path, dpi=135, bbox_inches="tight")
     print(f"wrote {path}")
     return 0
@@ -387,7 +395,7 @@ def run_figure() -> int:
 
 # Dense edge trace at the bean plane resolving the island chain the strike lines ride.
 
-ISLANDS_DIR = Path("results")
+ISLANDS_DIR = DOCS_DIR
 ISLAND_TURNS = 500
 
 
@@ -464,6 +472,7 @@ def run_islands() -> int:
         fontsize=12,
     )
     fig.tight_layout()
+    ISLANDS_DIR.mkdir(exist_ok=True)
     path = ISLANDS_DIR / f"w7x_islands_{key}.png"
     fig.savefig(path, dpi=145, bbox_inches="tight")
     print(f"wrote {path}")
@@ -954,6 +963,8 @@ RADIAL = 8
 RESTARTS = 4
 #: Stop restarting when a step improves the residual by less than this factor.
 IMPROVEMENT = 0.95
+#: Force imbalance SPEC is asked to reach, and below which a solve is an equilibrium.
+FORCE_TOLERANCE = 1.0e-10
 #: Half-width in normalised flux of the volume the island is left inside.
 BRACKET = 0.05
 
@@ -1170,11 +1181,15 @@ def run_spec() -> int:
     print()
     if finite:
         best = min(finite, key=lambda r: r["force_residual"])
+        met = [r for r in finite if r["force_residual"] <= FORCE_TOLERANCE]
         print(
             f"the residual reaches {best['force_residual']:.4e} at {best['volumes']} volumes "
-            f"against a 1e-10 tolerance, a factor of "
-            f"{max(r['force_residual'] for r in finite) / best['force_residual']:.1f} over the "
-            f"coarsest"
+            f"against a {FORCE_TOLERANCE:.0e} tolerance, and {len(met)} of {len(rows)} cases "
+            f"meet it; the rest span {min(r['force_residual'] for r in finite if r not in met):.4e} "
+            f"to {max(r['force_residual'] for r in finite):.4e}"
+            if len(met) < len(finite) else
+            f"the residual reaches {best['force_residual']:.4e} at {best['volumes']} volumes, "
+            f"and every case meets the {FORCE_TOLERANCE:.0e} tolerance"
         )
         for placement in ("on the resonance", "bracketing it"):
             here = [r for r in finite if r["placement"] == placement]
@@ -1333,6 +1348,17 @@ def run_stepped() -> int:
         print(
             f"\nPoincare section {r.shape}, axis trajectory {centre} at "
             f"R = {axis_r:.5f} m"
+        )
+        # A stalled Newton still writes a section, and xspec exits zero either way, so
+        # the island below is only an equilibrium's island where the force balance
+        # closed. The record carries the residual so the two cannot be confused.
+        residual = stepped_pressure.force_residual(result)
+        record["force_residual"] = residual
+        record["converged"] = bool(np.isfinite(residual) and residual <= FORCE_TOLERANCE)
+        print(
+            f"force residual {residual:.4e} against a {FORCE_TOLERANCE:.0e} tolerance: "
+            + ("in force balance" if record["converged"] else "NOT in force balance, so the "
+               "island below is measured on a section the Newton left behind")
         )
         widest = stepped_pressure.island_width(r, z, axis_r, axis_z)
         at_resonance = stepped_pressure.island_at_resonance(

@@ -1177,6 +1177,10 @@ def run_recycling() -> int:
             "wetted_area_m2": area,
             "cases": rows,
         },
+        # The layer this ramp stands on is traced geometry, so the record carries the
+        # version it was traced under. Nothing here solves, so that version comes from
+        # the inputs and not from a Twin.
+        geometry=_common.current_geometry(),
         reads=(EXHAUST_OUT,),
     )
     return 0
