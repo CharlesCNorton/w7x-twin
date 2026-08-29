@@ -29,10 +29,10 @@
           "source": "R. C. Wolf et al., Performance of Wendelstein 7-X stellarator plasmas during the first divertor operation phase, Phys. Plasmas 26, 082504 (2019), open copy at pure.mpg.de item_3156726 component file_3158694, figure 11 discussion",
           "interval": {
             "samples": 32,
-            "median": 826154.0785716797,
-            "median_error": 4948.574194394789,
-            "percentile_5": 801413.8389009896,
-            "percentile_95": 858572.7545442383,
+            "median": 826154.0785712511,
+            "median_error": 4948.574194386562,
+            "percentile_5": 801413.8389015135,
+            "percentile_95": 858572.7545443609,
             "fraction_inside_band": 0.0
           }
         },
@@ -46,10 +46,10 @@
           "source": "R. C. Wolf et al., Performance of Wendelstein 7-X stellarator plasmas during the first divertor operation phase, Phys. Plasmas 26, 082504 (2019), open copy at pure.mpg.de item_3156726 component file_3158694, figure 11 discussion",
           "interval": {
             "samples": 32,
-            "median": 1632737.2390751434,
-            "median_error": 10030.32930283616,
-            "percentile_5": 1584961.0670771294,
-            "percentile_95": 1696713.8386060614,
+            "median": 1632737.239076334,
+            "median_error": 10030.329303143175,
+            "percentile_5": 1584961.0670776302,
+            "percentile_95": 1696713.838605687,
             "fraction_inside_band": 0.0
           }
         },
@@ -202,10 +202,10 @@
           "source": "S. A. Bozhenkov et al., High-performance plasmas after pellet injections in Wendelstein 7-X, Nucl. Fusion 60, 066011 (2020), open copy at pure.mpg.de item_3231111, figure 2, the diamagnetic loop",
           "interval": {
             "samples": 32,
-            "median": 1088075.8049724717,
-            "median_error": 6529.468279196144,
-            "percentile_5": 1055472.6533509349,
-            "percentile_95": 1130752.2396197594,
+            "median": 1088075.8049723883,
+            "median_error": 6529.468279171997,
+            "percentile_5": 1055472.6533511402,
+            "percentile_95": 1130752.2396203054,
             "fraction_inside_band": 0.96875
           }
         },

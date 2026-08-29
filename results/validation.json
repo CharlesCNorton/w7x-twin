@@ -289,12 +289,12 @@
     {
       "section": "Records the newer analyses wrote, checked where they stand",
       "quantity": "trim mounting radius, pinned",
-      "value": 7.175929409425647,
+      "value": 7.028167605061066,
       "unit": "m",
       "published": "outer vessel outboard surface at 7.570 m",
       "band": [
         7.0,
-        7.689654737244903
+        7.5649269736586495
       ],
       "agrees": true
     },
@@ -349,7 +349,7 @@
     {
       "section": "Records the newer analyses wrote, checked where they stand",
       "quantity": "filaments inside the released coil solids",
-      "value": 13.201304952189512,
+      "value": 13.735851039593106,
       "unit": "mm",
       "published": "winding-package asymmetry scale",
       "band": [
@@ -373,7 +373,7 @@
     {
       "section": "Records the newer analyses wrote, checked where they stand",
       "quantity": "stepped-pressure island, interfaces bracketing",
-      "value": 27.221784612213252,
+      "value": 27.221784602271594,
       "unit": "mm",
       "published": "an island the placement leaves room for, on the best-converged case",
       "band": [
@@ -396,10 +396,34 @@
     },
     {
       "section": "Record dependencies",
+      "quantity": "discharges/profile_residuals.json inputs current",
+      "value": 0.0,
+      "unit": "",
+      "published": "digests of the 2 records it read",
+      "band": [
+        0.0,
+        0.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Record dependencies",
       "quantity": "exhaust/recycling_pressure.json inputs current",
       "value": 0.0,
       "unit": "",
       "published": "digests of the 1 records it read",
+      "band": [
+        0.0,
+        0.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Record dependencies",
+      "quantity": "plasma/computed.json inputs current",
+      "value": 0.0,
+      "unit": "",
+      "published": "digests of the 2 records it read",
       "band": [
         0.0,
         0.0
@@ -417,8 +441,32 @@
         0.0
       ],
       "agrees": true
+    },
+    {
+      "section": "Record dependencies",
+      "quantity": "plasma/turbulent_transport.json inputs current",
+      "value": 0.0,
+      "unit": "",
+      "published": "digests of the 2 records it read",
+      "band": [
+        0.0,
+        0.0
+      ],
+      "agrees": true
+    },
+    {
+      "section": "Record dependencies",
+      "quantity": "turbulence/mixing_length_constant.json inputs current",
+      "value": 0.0,
+      "unit": "",
+      "published": "digests of the 1 records it read",
+      "band": [
+        0.0,
+        0.0
+      ],
+      "agrees": true
     }
   ],
-  "agreed": 34,
-  "total": 34
+  "agreed": 38,
+  "total": 38
 }

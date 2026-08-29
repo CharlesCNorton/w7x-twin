@@ -1,12 +1,13 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "saturated": {
     "Redl analytic formula": {
@@ -14,71 +15,71 @@
       "mismatch": 0.04435845468491143
     },
     "drift-kinetic D_31": {
-      "total_current_a": -9890.808893620857,
-      "mismatch": 0.02585473488319501
+      "total_current_a": -9890.64501622402,
+      "mismatch": 0.02597538755462076
     }
   },
   "attribution": [
     {
       "drive": "monoenergetic D_31 as solved",
-      "median_gap": 0.8224042912023,
-      "worst_gap": 1.6358589731632336,
-      "total_current_a": -7406.671055063035,
+      "median_gap": 0.822404306207392,
+      "worst_gap": 1.5149332575073555,
+      "total_current_a": -7408.616077337734,
       "share_of_gap_closed": 0.0
     },
     {
       "drive": "the profile's effective charge",
-      "median_gap": 0.8224042912023,
-      "worst_gap": 1.6486936090277966,
-      "total_current_a": -7419.101254738426,
+      "median_gap": 0.822404306207392,
+      "worst_gap": 1.514951612195347,
+      "total_current_a": -7420.087283159271,
       "share_of_gap_closed": 0.0
     },
     {
       "drive": "the ambipolar radial field",
-      "median_gap": 0.7841301185629961,
-      "worst_gap": 1.6390802309220727,
-      "total_current_a": -8850.832213757572,
-      "share_of_gap_closed": 0.046539363970668934
+      "median_gap": 0.7841301372237299,
+      "worst_gap": 1.539783569237018,
+      "total_current_a": -8844.014068253578,
+      "share_of_gap_closed": 0.04653935867647341
     },
     {
       "drive": "electron momentum restored",
-      "median_gap": 0.930643484616178,
-      "worst_gap": 1.518487560951365,
-      "total_current_a": -4673.778258815997,
-      "share_of_gap_closed": -0.13161311847684987
+      "median_gap": 0.9306434905430313,
+      "worst_gap": 1.398934800396741,
+      "total_current_a": -4676.766643230272,
+      "share_of_gap_closed": -0.13161310503685986
     },
     {
       "drive": "all three together",
-      "median_gap": 0.8696286310936681,
-      "worst_gap": 1.4259328209369981,
-      "total_current_a": -6085.977627048977,
-      "share_of_gap_closed": -0.057422292656485574
+      "median_gap": 0.8696286425627267,
+      "worst_gap": 1.3870346517520178,
+      "total_current_a": -6065.972567605617,
+      "share_of_gap_closed": -0.0574222873091641
     }
   ],
-  "redl_total_current_a": -13571.640065862348,
+  "redl_total_current_a": -13571.636960756245,
   "diffused": [
     {
       "drive": "Redl analytic formula",
-      "saturated_a": -9086.250850737577,
-      "resistive_time_s": 0.5313437794286962,
-      "current_at_measured_time_a": -8895.645596834966,
-      "saturated_current_a": -8934.859873604444,
+      "saturated_a": -9086.198876357847,
+      "resistive_time_s": 0.5313395020166539,
+      "current_at_measured_time_a": -8895.595948927034,
+      "saturated_current_a": -8934.808416830087,
       "within_published_accuracy": false
     },
     {
       "drive": "D_31 at no radial field",
-      "saturated_a": 709.6117903103681,
-      "resistive_time_s": 0.5313437794286962,
-      "current_at_measured_time_a": 730.021096604755,
-      "saturated_current_a": 726.5404078212459,
+      "saturated_a": 696.4135184079564,
+      "resistive_time_s": 0.5313395020166539,
+      "current_at_measured_time_a": 714.8421133440738,
+      "saturated_current_a": 711.3676608402476,
       "within_published_accuracy": false
     },
     {
       "drive": "D_31 at the ambipolar field",
-      "saturated_a": 498.5537761746,
-      "resistive_time_s": 0.5313437794286962,
-      "current_at_measured_time_a": 528.1673585165073,
-      "saturated_current_a": 522.4064016430609,
+      "saturated_a": 510.57465578992714,
+      "resistive_time_s": 0.5313395020166539,
+      "current_at_measured_time_a": 539.0193398459178,
+      "saturated_current_a": 533.286656324767,
       "within_published_accuracy": false
     }
   ],
@@ -88,20 +89,20 @@
   "table_coverage": [
     {
       "s": 0.21,
-      "below_collisionality": 2.5125373274365656e-35,
-      "above_collisionality": 0.0017420807154963874,
+      "below_collisionality": 2.5125230251726044e-35,
+      "above_collisionality": 0.0017420995083795828,
       "above_field": 0.0
     },
     {
       "s": 0.49,
-      "below_collisionality": 2.60028938941769e-84,
-      "above_collisionality": 0.015827330963427876,
+      "below_collisionality": 2.6002632508048757e-84,
+      "above_collisionality": 0.015827404609658022,
       "above_field": 0.0
     },
     {
       "s": 0.79,
       "below_collisionality": 0.0,
-      "above_collisionality": 0.04948508388832078,
+      "above_collisionality": 0.04798442623287003,
       "above_field": 0.0
     }
   ]

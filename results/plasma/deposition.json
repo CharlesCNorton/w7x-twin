@@ -1025,7 +1025,7 @@
       0.0,
       0.0
     ],
-    "energy_drift": 0.003694400851672277,
+    "energy_drift": 0.0036584879246806304,
     "note": "collisionless, full energy, pitch 0.4 to 0.8 counter-injected, 2 ms",
     "published": 0.11,
     "published_source": "S. A. Lazerson et al., Validation of the BEAMS3D neutral beam heating and current-drive model on Wendelstein 7-X, Nucl. Fusion 61 (2021), doi:10.1088/1741-4326/ac0771, table 2",

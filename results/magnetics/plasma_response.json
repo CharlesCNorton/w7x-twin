@@ -1,17 +1,18 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "configuration": "standard",
-  "beta": 0.010487429072747021,
-  "toroidal_current_a": -9886.41931465481,
-  "sheet_current_a": -9883.775507542532,
+  "beta": 0.010487429001698923,
+  "toroidal_current_a": -9885.913290448725,
+  "sheet_current_a": -9883.309164966318,
   "samplings": [
     [
       40,
@@ -63,90 +64,95 @@
       NaN
     ],
     [
-      1.4004064312761466e-05,
-      0.11964821641249648,
-      0.003009948534246099,
-      0.0005401932554521417,
-      1.3426862379728802e-05
+      1.4004092632222825e-05,
+      0.1196496641859845,
+      0.0030086403074300163,
+      0.0005402092374052342,
+      1.3427457477795113e-05
     ],
     [
-      5.619838203928251e-07,
-      0.11242813077715998,
-      0.002409642923295351,
-      0.00015667989196602086,
-      2.846033076314182e-06
+      5.620009494652911e-07,
+      0.11242951284736731,
+      0.002409538035111681,
+      0.0001566857671093094,
+      2.846726980233749e-06
     ]
   ],
-  "panel_width_m": 0.015938158976033956,
+  "panel_width_m": 0.015938149594163818,
   "points": [
     {
       "point": "magnetic axis",
-      "volume_t": 0.0345806926984448,
-      "extrapolated_t": 0.03702455190764612,
-      "extrapolation_correction_t": 0.0024647713901126325,
-      "sheet_t": 0.02514634821048601,
-      "sheet_last_change_t": 5.619838203928251e-07,
-      "standoff_m": -0.2592884698409925,
+      "volume_t": 0.03458066659464012,
+      "extrapolated_t": 0.03702359486726953,
+      "extrapolation_correction_t": 0.0024640638109650155,
+      "sheet_t": 0.025146329887020438,
+      "sheet_last_change_t": 5.620009494652911e-07,
+      "standoff_m": 0.21454696456736191,
+      "outside_the_boundary": false,
       "resolved_by_the_sheet": false,
-      "relative_difference": 0.32081964764324633
+      "relative_difference": 0.32080258610298024
     },
     {
       "point": "just outside the boundary, outboard",
-      "volume_t": 0.004438223257269301,
-      "extrapolated_t": 0.004687433368251993,
-      "extrapolation_correction_t": 0.000769846410597646,
-      "sheet_t": 0.03637106875602271,
-      "sheet_last_change_t": 0.11242813077715998,
-      "standoff_m": 0.005185769396820028,
+      "volume_t": 0.004437274604094401,
+      "extrapolated_t": 0.004686687544203662,
+      "extrapolation_correction_t": 0.0007700943856239058,
+      "sheet_t": 0.03637154534746055,
+      "sheet_last_change_t": 0.11242951284736731,
+      "standoff_m": 0.005185761914502152,
+      "outside_the_boundary": true,
       "resolved_by_the_sheet": false,
-      "relative_difference": 6.7592716309023455
+      "relative_difference": 6.760608106346593
     },
     {
       "point": "just outside the boundary, inboard",
-      "volume_t": 0.0029549390656727786,
-      "extrapolated_t": 0.002992321373047047,
-      "extrapolation_correction_t": 0.00011184485467022032,
-      "sheet_t": 0.00747823191664231,
-      "sheet_last_change_t": 0.002409642923295351,
-      "standoff_m": -0.6719867128824273,
+      "volume_t": 0.0029540684853263306,
+      "extrapolated_t": 0.002994435777052845,
+      "extrapolation_correction_t": 0.00011836032044154442,
+      "sheet_t": 0.007476575573870349,
+      "sheet_last_change_t": 0.002409538035111681,
+      "standoff_m": 0.005182833078395093,
+      "outside_the_boundary": true,
       "resolved_by_the_sheet": false,
-      "relative_difference": 1.4991406284102806
+      "relative_difference": 1.4968228175622698
     },
     {
       "point": "island region",
-      "volume_t": 0.004419792450555725,
-      "extrapolated_t": 0.004419817070173017,
-      "extrapolation_correction_t": 8.361399852050054e-08,
-      "sheet_t": 0.0076437682931551265,
-      "sheet_last_change_t": 0.00015667989196602086,
-      "standoff_m": 0.03889327047614888,
-      "resolved_by_the_sheet": true,
-      "relative_difference": 0.729430918021208
+      "volume_t": 0.004419979048059285,
+      "extrapolated_t": 0.0044200031456575785,
+      "extrapolation_correction_t": 8.18398390000364e-08,
+      "sheet_t": 0.00764374709700343,
+      "sheet_last_change_t": 0.0001566857671093094,
+      "standoff_m": 0.03889321435876758,
+      "outside_the_boundary": true,
+      "resolved_by_the_sheet": false,
+      "relative_difference": 0.7293533160746754
     },
     {
       "point": "outside the island",
-      "volume_t": 0.003869478188760389,
-      "extrapolated_t": 0.003864393359396012,
-      "extrapolation_correction_t": 1.4695138310614192e-05,
-      "sheet_t": 0.004066118732414384,
-      "sheet_last_change_t": 2.846033076314182e-06,
-      "standoff_m": 0.1555730819045955,
+      "volume_t": 0.003869571634072315,
+      "extrapolated_t": 0.0038643535006532884,
+      "extrapolation_correction_t": 1.4840641409928412e-05,
+      "sheet_t": 0.004065946026977951,
+      "sheet_last_change_t": 2.846726980233749e-06,
+      "standoff_m": 0.15557285743506402,
+      "outside_the_boundary": true,
       "resolved_by_the_sheet": true,
-      "relative_difference": 0.05220104535370097
+      "relative_difference": 0.05216720631033948
     }
   ],
   "islands": {
     "vacuum field": {
-      "width_m": 0.05706433513708031,
-      "lines": 46,
+      "width_m": 0.05707483732240615,
+      "lines": 47,
       "resonance": "5/5",
       "axis_r_m": 5.947424996569918
     },
     "with the plasma field": {
-      "width_m": 0.06349797512306044,
-      "lines": 49,
+      "width_m": 0.06344221778453463,
+      "lines": 43,
       "resonance": "5/5",
-      "axis_r_m": 5.975718721572482
+      "axis_r_m": 5.9757189336136936
     }
   }
 }

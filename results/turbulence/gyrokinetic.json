@@ -1,11 +1,13 @@
 {
   "geometry": {
-    "geometry": "1169c323d5d9",
+    "geometry": "c6a51d4a7d32",
+    "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "1234b8c6e07f"
+    "components": "e234e9cda35f"
   },
   "cases": [
     {
@@ -14,7 +16,7 @@
       "tprim": 1.0,
       "growth_rate": 0.0088161669375,
       "frequency": -0.01169485825,
-      "seconds": 150.4868619008921,
+      "seconds": 266.73192103393376,
       "returncode": 0,
       "stderr": ""
     },
@@ -24,7 +26,7 @@
       "tprim": 1.0,
       "growth_rate": 0.03385683625,
       "frequency": -0.033994888625,
-      "seconds": 143.0631128770765,
+      "seconds": 165.30308684613556,
       "returncode": 0,
       "stderr": ""
     },
@@ -34,7 +36,7 @@
       "tprim": 1.0,
       "growth_rate": 0.057564323875,
       "frequency": -0.023326514125,
-      "seconds": 68.66660101292655,
+      "seconds": 59.777988395653665,
       "returncode": 0,
       "stderr": ""
     },
@@ -44,7 +46,7 @@
       "tprim": 1.0,
       "growth_rate": 0.065392456,
       "frequency": 0.008641737875,
-      "seconds": 122.34697099402547,
+      "seconds": 112.70140606444329,
       "returncode": 0,
       "stderr": ""
     },
@@ -54,7 +56,7 @@
       "tprim": 2.0,
       "growth_rate": 0.033172490375,
       "frequency": -0.0048326142125,
-      "seconds": 136.36436988902278,
+      "seconds": 137.83498928975314,
       "returncode": 0,
       "stderr": ""
     },
@@ -64,7 +66,7 @@
       "tprim": 2.0,
       "growth_rate": 0.082660488875,
       "frequency": 0.007594796,
-      "seconds": 42.03815981885418,
+      "seconds": 47.11410269327462,
       "returncode": 0,
       "stderr": ""
     },
@@ -74,7 +76,7 @@
       "tprim": 2.0,
       "growth_rate": 0.122946365,
       "frequency": 0.05058917025,
-      "seconds": 30.761307098902762,
+      "seconds": 30.508149426430464,
       "returncode": 0,
       "stderr": ""
     },
@@ -84,7 +86,7 @@
       "tprim": 2.0,
       "growth_rate": 0.15086464,
       "frequency": 0.135597425,
-      "seconds": 78.30847059399821,
+      "seconds": 78.31012887321413,
       "returncode": 0,
       "stderr": ""
     },
@@ -94,7 +96,7 @@
       "tprim": 3.0,
       "growth_rate": 0.056052911125,
       "frequency": 0.008376835687499999,
-      "seconds": 78.9519879501313,
+      "seconds": 90.21411428879946,
       "returncode": 0,
       "stderr": ""
     },
@@ -104,7 +106,7 @@
       "tprim": 3.0,
       "growth_rate": 0.13011310124999997,
       "frequency": 0.042021818875,
-      "seconds": 41.98644186509773,
+      "seconds": 41.382244838401675,
       "returncode": 0,
       "stderr": ""
     },
@@ -114,7 +116,7 @@
       "tprim": 3.0,
       "growth_rate": 0.19009736,
       "frequency": 0.10851378625,
-      "seconds": 26.932222990086302,
+      "seconds": 26.691921398974955,
       "returncode": 0,
       "stderr": ""
     },
@@ -124,7 +126,7 @@
       "tprim": 3.0,
       "growth_rate": 0.23002566000000002,
       "frequency": 0.2327967725,
-      "seconds": 66.3934936830774,
+      "seconds": 66.27832636795938,
       "returncode": 0,
       "stderr": ""
     },
@@ -134,7 +136,7 @@
       "tprim": 4.0,
       "growth_rate": 0.076527413625,
       "frequency": 0.020829915375,
-      "seconds": 96.01353491097689,
+      "seconds": 96.18935767374933,
       "returncode": 0,
       "stderr": ""
     },
@@ -144,7 +146,7 @@
       "tprim": 4.0,
       "growth_rate": 0.17409981,
       "frequency": 0.06899532475,
-      "seconds": 35.5126395940315,
+      "seconds": 35.55213490873575,
       "returncode": 0,
       "stderr": ""
     },
@@ -154,7 +156,7 @@
       "tprim": 4.0,
       "growth_rate": 0.25035449249999997,
       "frequency": 0.15606222875,
-      "seconds": 26.263147306162864,
+      "seconds": 23.22089847177267,
       "returncode": 0,
       "stderr": ""
     },
@@ -164,7 +166,7 @@
       "tprim": 4.0,
       "growth_rate": 0.3007405225,
       "frequency": 0.31753173999999995,
-      "seconds": 66.49337950907648,
+      "seconds": 66.89055558945984,
       "returncode": 0,
       "stderr": ""
     },
@@ -174,7 +176,7 @@
       "tprim": 1.0,
       "growth_rate": 0.013158657625,
       "frequency": -0.0039833916375,
-      "seconds": 160.30732865910977,
+      "seconds": 151.300989465788,
       "returncode": 0,
       "stderr": ""
     },
@@ -184,7 +186,7 @@
       "tprim": 1.0,
       "growth_rate": 0.03076325,
       "frequency": -0.006699357775,
-      "seconds": 168.5711859120056,
+      "seconds": 152.05243645515293,
       "returncode": 0,
       "stderr": ""
     },
@@ -194,7 +196,7 @@
       "tprim": 1.0,
       "growth_rate": 0.034087189625,
       "frequency": 0.020862636875,
-      "seconds": 92.4762608348392,
+      "seconds": 90.63044211268425,
       "returncode": 0,
       "stderr": ""
     },
@@ -204,7 +206,7 @@
       "tprim": 1.0,
       "growth_rate": 0.012452120625,
       "frequency": 0.074850532125,
-      "seconds": 351.0961253999267,
+      "seconds": 350.83150472678244,
       "returncode": 0,
       "stderr": ""
     },
@@ -214,7 +216,7 @@
       "tprim": 2.0,
       "growth_rate": 0.03203972825,
       "frequency": 0.00274186385,
-      "seconds": 150.46904627908953,
+      "seconds": 165.48371313419193,
       "returncode": 0,
       "stderr": ""
     },
@@ -224,7 +226,7 @@
       "tprim": 2.0,
       "growth_rate": 0.073803672875,
       "frequency": 0.0350360755,
-      "seconds": 52.17006342113018,
+      "seconds": 45.56632222235203,
       "returncode": 0,
       "stderr": ""
     },
@@ -234,7 +236,7 @@
       "tprim": 2.0,
       "growth_rate": 0.10130577125,
       "frequency": 0.08651682,
-      "seconds": 27.587706983089447,
+      "seconds": 31.770554809831083,
       "returncode": 0,
       "stderr": ""
     },
@@ -244,7 +246,7 @@
       "tprim": 2.0,
       "growth_rate": 0.12269238625000001,
       "frequency": 0.1688058475,
-      "seconds": 96.82557197101414,
+      "seconds": 101.91654267720878,
       "returncode": 0,
       "stderr": ""
     },
@@ -254,7 +256,7 @@
       "tprim": 3.0,
       "growth_rate": 0.0550895905,
       "frequency": 0.01591178,
-      "seconds": 98.73556429590099,
+      "seconds": 98.4878692002967,
       "returncode": 0,
       "stderr": ""
     },
@@ -264,7 +266,7 @@
       "tprim": 3.0,
       "growth_rate": 0.1205377325,
       "frequency": 0.070277901625,
-      "seconds": 46.91756783681922,
+      "seconds": 46.853141077794135,
       "returncode": 0,
       "stderr": ""
     },
@@ -274,7 +276,7 @@
       "tprim": 3.0,
       "growth_rate": 0.17141989125,
       "frequency": 0.139384475,
-      "seconds": 37.199963218998164,
+      "seconds": 37.02192368078977,
       "returncode": 0,
       "stderr": ""
     },
@@ -284,7 +286,7 @@
       "tprim": 3.0,
       "growth_rate": 0.20653763125,
       "frequency": 0.26175454125,
-      "seconds": 92.91729039279744,
+      "seconds": 81.29486388992518,
       "returncode": 0,
       "stderr": ""
     },
@@ -294,7 +296,7 @@
       "tprim": 4.0,
       "growth_rate": 0.07476981575,
       "frequency": 0.029354527375,
-      "seconds": 105.64195101195946,
+      "seconds": 99.62693046964705,
       "returncode": 0,
       "stderr": ""
     },
@@ -304,7 +306,7 @@
       "tprim": 4.0,
       "growth_rate": 0.1652871325,
       "frequency": 0.097481153625,
-      "seconds": 41.41156102414243,
+      "seconds": 48.08543583098799,
       "returncode": 0,
       "stderr": ""
     },
@@ -314,7 +316,7 @@
       "tprim": 4.0,
       "growth_rate": 0.2333358025,
       "frequency": 0.18627481,
-      "seconds": 28.45735457795672,
+      "seconds": 28.27952097915113,
       "returncode": 0,
       "stderr": ""
     },
@@ -324,7 +326,7 @@
       "tprim": 4.0,
       "growth_rate": 0.27972079250000004,
       "frequency": 0.348313985,
-      "seconds": 71.25431024492718,
+      "seconds": 62.372078225016594,
       "returncode": 0,
       "stderr": ""
     }

@@ -1,12 +1,13 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "configuration": "standard",
   "module": 1,
@@ -233,5 +234,12 @@
       "b22_predicted": 0.00025568354341459586,
       "b22_against_published": 5.1136708682919165
     }
-  ]
+  ],
+  "closest": {
+    "deviation": "radial shift",
+    "amplitude_for_b11": 0.004038536994820439,
+    "b22_over_b11": 0.4972073104128736,
+    "b22_predicted": 2.486036552064368e-05,
+    "b22_against_published": 0.4972073104128736
+  }
 }

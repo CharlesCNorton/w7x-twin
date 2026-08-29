@@ -1,12 +1,13 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "configuration": "op12a_22ka_mimic",
   "temperature_scale": 1.0,
@@ -35,27 +36,27 @@
     2164.071949658671
   ],
   "returncode": 0,
-  "seconds": 0.0,
+  "seconds": 426.6079666418955,
   "poincare_shape": [
     131,
     400,
     48
   ],
-  "axis_r_m": 5.901009686051525,
+  "axis_r_m": 5.914189465867292,
   "stepped_widest_plateau": {
-    "width_m": 0.0133246797943006,
-    "trajectories": 5,
-    "winding": 0.2048271582762903,
-    "inner_m": 0.0005297046585989968,
-    "outer_m": 0.013854384452899597
+    "width_m": 0.010336837517347708,
+    "trajectories": 4,
+    "winding": 0.17867489789783866,
+    "inner_m": 0.5089061222604978,
+    "outer_m": 0.5192429597778455
   },
   "stepped_at_resonance": {
-    "width_m": 0.00016146817166134975,
-    "trajectories": 2,
-    "winding": 0.16669150333987848,
+    "width_m": 0.08367296209108116,
+    "trajectories": 29,
+    "winding": 0.16666624995713256,
     "implied_transform": 0.8333333333333334,
-    "inner_m": 0.38866896007036045,
-    "outer_m": 0.3888304282420218
+    "inner_m": 0.2989349027094488,
+    "outer_m": 0.38260786480052994
   },
   "traced": {
     "width_m": 0.017441593926162458,

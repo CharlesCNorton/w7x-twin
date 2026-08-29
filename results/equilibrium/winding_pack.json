@@ -1,12 +1,13 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "turns": 108,
   "pitch_m": 0.0175,
@@ -18,6 +19,7 @@
   ],
   "layouts": [
     {
+      "label": "6 x 18",
       "layers": 6,
       "turns_per_layer": 18,
       "width_m": 0.10350000000000001,
@@ -26,6 +28,7 @@
       "island_mm": 166.02226278278297
     },
     {
+      "label": "9 x 12",
       "layers": 9,
       "turns_per_layer": 12,
       "width_m": 0.15600000000000003,
@@ -34,6 +37,7 @@
       "island_mm": 94.52775616743469
     },
     {
+      "label": "12 x 9",
       "layers": 12,
       "turns_per_layer": 9,
       "width_m": 0.20850000000000002,
@@ -42,12 +46,22 @@
       "island_mm": 50.69173141919414
     },
     {
+      "label": "18 x 6",
       "layers": 18,
       "turns_per_layer": 6,
       "width_m": 0.31350000000000006,
       "height_m": 0.10350000000000001,
       "iota_edge": 0.9936618874764056,
       "island_mm": 80.44142258284825
+    },
+    {
+      "label": "CAD envelope",
+      "layers": 12,
+      "turns_per_layer": 9,
+      "width_m": 0.21588000000000002,
+      "height_m": 0.15600000000000003,
+      "iota_edge": 0.9686813582308229,
+      "island_mm": 51.49056781839878
     }
   ],
   "iota_edge_span": [

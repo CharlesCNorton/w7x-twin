@@ -1,8 +1,9 @@
 {
   "geometry": {
-    "geometry": "e0624a09d0db",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
@@ -11,10 +12,67 @@
   "renormalisation": 1.4,
   "cases": [
     {
+      "power_w": 2000000.0,
+      "iterations": 3,
+      "converged": true,
+      "seconds": 221.65149610396475,
+      "coupled": {
+        "stored_energy_j": 840201.5720060144,
+        "current_a": -10387.070552560946,
+        "temperature_axis_ev": 2558.1728770873997,
+        "beta": 0.009258660265579036,
+        "iota_edge": 0.9757345249634563,
+        "shift_mm": 22.14316080260126,
+        "beta_analysed": 0.009258660265579036
+      },
+      "sequential": {
+        "stored_energy_j": 828198.323718407,
+        "current_a": -12863.720802881717,
+        "temperature_axis_ev": 2529.64959230668,
+        "beta": 0.010486621609608398,
+        "iota_edge": 0.9808411665707206,
+        "shift_mm": 28.345524648963227,
+        "beta_analysed": 0.010486621609608398
+      },
+      "residual": {
+        "stored_energy": 1.1611205975964796e-05,
+        "current": 0.0012122730134363233
+      },
+      "history": [
+        {
+          "iteration": 1,
+          "stored_energy_j": 841025.8541136433,
+          "total_current_a": -12863.720802881717,
+          "electron_temperature_axis_ev": 2554.767739188681,
+          "beta": 0.010486621609608398,
+          "iota_edge": 0.9808411665707206,
+          "bootstrap_mismatch": 0.04435845468491143
+        },
+        {
+          "iteration": 2,
+          "stored_energy_j": 840191.8162525005,
+          "total_current_a": -10374.478587241418,
+          "electron_temperature_axis_ev": 2558.1767100805796,
+          "beta": 0.009246734066669092,
+          "iota_edge": 0.9757098033580355,
+          "bootstrap_mismatch": 0.06585108232758372
+        },
+        {
+          "iteration": 3,
+          "stored_energy_j": 840201.5720060144,
+          "total_current_a": -10387.070552560946,
+          "electron_temperature_axis_ev": 2558.1728770873997,
+          "beta": 0.009258660265579036,
+          "iota_edge": 0.9757345249634563,
+          "bootstrap_mismatch": 0.0658437817280253
+        }
+      ]
+    },
+    {
       "power_w": 5000000.0,
       "iterations": 3,
       "converged": true,
-      "seconds": 277.70460331300274,
+      "seconds": 43.14538785908371,
       "coupled": {
         "stored_energy_j": 1202787.6315228064,
         "current_a": -14213.260811603597,
@@ -64,6 +122,63 @@
           "beta": 0.013273719173381047,
           "iota_edge": 0.9830660310476765,
           "bootstrap_mismatch": 0.06427096420595528
+        }
+      ]
+    },
+    {
+      "power_w": 10000000.0,
+      "iterations": 3,
+      "converged": true,
+      "seconds": 209.93121131975204,
+      "coupled": {
+        "stored_energy_j": 1577974.105775318,
+        "current_a": -17831.844382861822,
+        "temperature_axis_ev": 4585.113932131598,
+        "beta": 0.017437318807208738,
+        "iota_edge": 0.9896190224571563,
+        "shift_mm": 39.65477204866552,
+        "beta_analysed": 0.017437318807208738
+      },
+      "sequential": {
+        "stored_energy_j": 1551423.0635829167,
+        "current_a": -12863.720802881717,
+        "temperature_axis_ev": 4567.396462815981,
+        "beta": 0.010486621609608398,
+        "iota_edge": 0.9808411665707206,
+        "shift_mm": 28.345524648963227,
+        "beta_analysed": 0.010486621609608398
+      },
+      "residual": {
+        "stored_energy": 2.736383542331158e-05,
+        "current": 0.0042534654320484705
+      },
+      "history": [
+        {
+          "iteration": 1,
+          "stored_energy_j": 1575468.508815194,
+          "total_current_a": -12863.720802881717,
+          "electron_temperature_axis_ev": 4604.311333214034,
+          "beta": 0.010486621609608398,
+          "iota_edge": 0.9808411665707206,
+          "bootstrap_mismatch": 0.04435845468491143
+        },
+        {
+          "iteration": 2,
+          "stored_energy_j": 1578017.2851990508,
+          "total_current_a": -17907.691516533992,
+          "electron_temperature_axis_ev": 4584.796403284272,
+          "beta": 0.017541095860836072,
+          "iota_edge": 0.9897386352281825,
+          "bootstrap_mismatch": 0.06257812376665108
+        },
+        {
+          "iteration": 3,
+          "stored_energy_j": 1577974.105775318,
+          "total_current_a": -17831.844382861822,
+          "electron_temperature_axis_ev": 4585.113932131598,
+          "beta": 0.017437318807208738,
+          "iota_edge": 0.9896190224571563,
+          "bootstrap_mismatch": 0.06274654686520263
         }
       ]
     }

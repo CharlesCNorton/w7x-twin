@@ -1,12 +1,13 @@
 {
   "geometry": {
-    "geometry": "381cf00c8d32",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
-    "components": "accf49ac0e12"
+    "components": "e234e9cda35f"
   },
   "drive": "redl",
   "steps": [
@@ -16,27 +17,27 @@
       "bootstrap_current_a": 0.0,
       "iota_edge": 0.9537044689265297,
       "iota_axis": 0.8495852194753465,
-      "lines": 67,
-      "median_arc_m": 0.807216733731934,
-      "mean_arc_m": 0.7991672251673166,
-      "inner_arc_m": 0.5843729174326279,
-      "outer_arc_m": 0.9182748016867193,
-      "spread_arc_m": 0.12152961643594175,
-      "target_length_m": 1.0245837378696678,
-      "median_connection": 124.72492377010467,
+      "lines": 69,
+      "median_arc_m": 0.9106785333403049,
+      "mean_arc_m": 0.8737232098705642,
+      "inner_arc_m": 0.7794821000756569,
+      "outer_arc_m": 0.9391488224774721,
+      "spread_arc_m": 0.07040075285725236,
+      "target_length_m": 1.0246543472148775,
+      "median_connection": 51.307492779272074,
       "per_module": [
         0,
         0,
-        58,
-        9,
+        68,
+        1,
         0
       ],
       "per_element": {
-        "divertor horizontal target, upper": 9,
-        "divertor vertical target, upper": 58
+        "divertor horizontal target, upper": 1,
+        "divertor vertical target, upper": 68
       },
-      "upper_fraction": 0.8656716417910447,
-      "resolution_floor_m": 0.02205686303686428
+      "upper_fraction": 0.9855072463768116,
+      "resolution_floor_m": 0.021394197546215934
     },
     {
       "temperature_scale": 0.5,
@@ -44,27 +45,27 @@
       "bootstrap_current_a": -6847.74082647597,
       "iota_edge": 0.9684474095792817,
       "iota_axis": 0.8713158252254914,
-      "lines": 81,
-      "median_arc_m": 0.8473486898844805,
-      "mean_arc_m": 0.8531179411788644,
-      "inner_arc_m": 0.7861179967177606,
-      "outer_arc_m": 0.9403682268939608,
-      "spread_arc_m": 0.07190811197442037,
-      "target_length_m": 1.0245837378696678,
-      "median_connection": 161.40773239869944,
+      "lines": 83,
+      "median_arc_m": 0.9068965239781095,
+      "mean_arc_m": 0.8840682668717944,
+      "inner_arc_m": 0.8057523448429098,
+      "outer_arc_m": 0.9461377095967931,
+      "spread_arc_m": 0.07515510270534154,
+      "target_length_m": 1.0246543472148775,
+      "median_connection": 123.87919474071244,
       "per_module": [
         0,
         0,
-        79,
+        81,
         2,
         0
       ],
       "per_element": {
         "divertor horizontal target, upper": 2,
-        "divertor vertical target, upper": 79
+        "divertor vertical target, upper": 81
       },
-      "upper_fraction": 0.9753086419753086,
-      "resolution_floor_m": 0.022970612262336376
+      "upper_fraction": 0.9759036144578314,
+      "resolution_floor_m": 0.021343208017661344
     },
     {
       "temperature_scale": 0.75,
@@ -72,27 +73,27 @@
       "bootstrap_current_a": -9933.967469073294,
       "iota_edge": 0.9750508295770928,
       "iota_axis": 0.8798947597411939,
-      "lines": 60,
-      "median_arc_m": 0.8715731918192837,
-      "mean_arc_m": 0.8830431715236889,
-      "inner_arc_m": 0.8322541232991937,
-      "outer_arc_m": 0.9498028870265688,
-      "spread_arc_m": 0.044059700858855945,
-      "target_length_m": 1.0245837378696678,
-      "median_connection": 161.49936852865267,
+      "lines": 58,
+      "median_arc_m": 0.9222036700465035,
+      "mean_arc_m": 0.9173865569229778,
+      "inner_arc_m": 0.8616851886983385,
+      "outer_arc_m": 0.9563712608106106,
+      "spread_arc_m": 0.03618596046001974,
+      "target_length_m": 1.0246543472148775,
+      "median_connection": 160.14355421675947,
       "per_module": [
         0,
         0,
-        60,
+        58,
         0,
         0
       ],
       "per_element": {
         "divertor horizontal target, upper": 0,
-        "divertor vertical target, upper": 60
+        "divertor vertical target, upper": 58
       },
       "upper_fraction": 1.0,
-      "resolution_floor_m": 0.023480692734584245
+      "resolution_floor_m": 0.021679877028981116
     },
     {
       "temperature_scale": 1.0,
@@ -100,27 +101,27 @@
       "bootstrap_current_a": -12863.720802881717,
       "iota_edge": 0.9808411665707206,
       "iota_axis": 0.8875213143385601,
-      "lines": 38,
-      "median_arc_m": 0.9176665893510985,
-      "mean_arc_m": 0.9207752527507285,
-      "inner_arc_m": 0.8904489233026752,
-      "outer_arc_m": 0.9596655917075139,
-      "spread_arc_m": 0.026019537961101076,
-      "target_length_m": 1.0245837378696678,
-      "median_connection": 197.52197185133812,
+      "lines": 33,
+      "median_arc_m": 0.9423756090699218,
+      "mean_arc_m": 0.9396486057184685,
+      "inner_arc_m": 0.9079092189188671,
+      "outer_arc_m": 0.9666409313253946,
+      "spread_arc_m": 0.022551120978380326,
+      "target_length_m": 1.0246543472148775,
+      "median_connection": 160.16002944387395,
       "per_module": [
         0,
         0,
-        38,
+        33,
         0,
         0
       ],
       "per_element": {
         "divertor horizontal target, upper": 0,
-        "divertor vertical target, upper": 38
+        "divertor vertical target, upper": 33
       },
       "upper_fraction": 1.0,
-      "resolution_floor_m": 0.024469014617945768
+      "resolution_floor_m": 0.021753079052471303
     }
   ]
 }

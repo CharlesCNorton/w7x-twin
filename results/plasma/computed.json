@@ -1,12 +1,17 @@
 {
   "geometry": {
-    "geometry": "e0624a09d0db",
+    "geometry": "c6a51d4a7d32",
     "epoch": "hhf",
     "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
     "grid": "dbbc11b5c45b",
     "template": "38dd0e23ff00",
     "vessel": "864272f7575e",
     "components": "e234e9cda35f"
+  },
+  "reads": {
+    "results/turbulence/growth_rate_grid.json": "0c8da91eac94d484",
+    "results/turbulence/mixing_length_constant.json": "a09a8eeb14a1ad9c"
   },
   "heating_w": 5000000.0,
   "carbon_edge_fraction": 0.02,
@@ -54,21 +59,21 @@
     },
     {
       "inputs": "computed turbulence",
-      "stored_energy_j": 238020.2622639352,
-      "confinement_time_s": 0.04760405245278704,
-      "over_iss04": 0.28145843901661777,
-      "central_electron_temperature_ev": 614.0874007889684,
+      "stored_energy_j": 5730982.458386058,
+      "confinement_time_s": 1.1461964916772116,
+      "over_iss04": 6.776874209895219,
+      "central_electron_temperature_ev": 8068.85196970725,
       "radiated_fraction": 0.0,
-      "neoclassical_fraction_on_axis": 0.07478368831288881
+      "neoclassical_fraction_on_axis": 1.0
     },
     {
       "inputs": "all four",
-      "stored_energy_j": 234812.25631780372,
-      "confinement_time_s": 0.046962451263560745,
-      "over_iss04": 0.27766497900877624,
-      "central_electron_temperature_ev": 615.479619525882,
-      "radiated_fraction": 0.1396960332431802,
-      "neoclassical_fraction_on_axis": 0.006740799907421228
+      "stored_energy_j": 5211706.866717717,
+      "confinement_time_s": 1.0423413733435434,
+      "over_iss04": 6.162831959625221,
+      "central_electron_temperature_ev": 7417.281726762951,
+      "radiated_fraction": 0.0857299789876957,
+      "neoclassical_fraction_on_axis": 0.820608435818615
     }
   ]
 }
