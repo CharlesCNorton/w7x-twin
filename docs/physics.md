@@ -268,18 +268,18 @@ midplane.
 
 | Multiple of the measured correction | Module max/min | Module spread |
 |---|---|---|
-| −2 | 1.341 | 0.113 |
-| −1 | 1.192 | 0.068 |
-| −0.5 | 1.085 | 0.031 |
+| −2 | 1.451 | 0.129 |
+| −1 | 1.204 | 0.067 |
+| −0.5 | 1.085 | 0.029 |
 | 0 | 1.000 | 0.000 |
-| +0.5 | 1.078 | 0.027 |
-| +1 | 1.207 | 0.061 |
+| +0.5 | 1.101 | 0.032 |
+| +1 | 1.239 | 0.069 |
 
 The fan is anchored to the vacuum boundary the traced field owns and lands eleven
 hundred of its twelve hundred lines. The unpowered set spreads the five modules evenly
 to the digits the tracer carries, so the table is field and not discretisation. At the
 measured amplitude and phase the imbalance between the most and least loaded module is
-1.19 to 1, against a measured factor of almost four in temperature rise falling below
+1.24 to 1, against a measured factor of almost four in temperature rise falling below
 two once the correction is applied. The trim filaments are reconstructed, so this
 amplitude carries the 16 % of the table above, and the source states that the divertor
 misalignment contribution to the measured imbalance could not be separated from the
@@ -293,20 +293,20 @@ than the field.
 
 The same field can be carried as a deviation of the
 superconducting set rather than as the trim current that cancels it.
-The measured correction puts 0.2330 mT into n = 1 on the R = 6.2 m midplane circle, which is
+The measured correction puts 0.2888 mT into n = 1 on the R = 6.2 m midplane circle, which is
 the figure `error_field.py` reports for the same field, and three deviations of the coil set
 are driven with an n = 1 pattern around the torus against it:
 
 | Deviation | Response | Equivalent to the measured field |
 |---|---|---|
-| Each coil displaced along the major radius | 2.01 μT/mm | 116 mm |
-| Each coil tilted about the major radius | 1.35 μT/mm | 172 mm |
-| Each winding deformed out of its own plane | 1.72 μT/mm | 135 mm |
+| Each coil displaced along the major radius | 2.01 μT/mm | 144 mm |
+| Each coil tilted about the major radius | 1.35 μT/mm | 214 mm |
+| Each winding deformed out of its own plane | 1.72 μT/mm | 168 mm |
 
 All three are linear in their amplitude to 3 % over an order of magnitude and agree with each
 other to 49 %, so this measure does not distinguish which deviation the machine carries. The
 amplitudes it needs sit far above the assembly tolerance: W7-X was built to about a
-millimetre, at which a rigid shift on every coil gives 2 μT against the 233 μT the measured
+millimetre, at which a rigid shift on every coil gives 2 μT against the 289 μT the measured
 correction carries.
 
 The second harmonic distinguishes them. `python -m w7x_twin intrinsic` scales
@@ -931,7 +931,7 @@ current setting tolerance gives.
 
 `python -m w7x_twin validate` writes every comparison below to `results/validation.json` with
 the geometry version it was produced from, and exits non-zero if any of them stops
-agreeing with its reference. All thirty-two agree.
+agreeing with its reference. All thirty-eight agree.
 
 The one published W7-X equilibrium reconstruction with consistent uncertainties, Koeberl
 et al. (MaxEnt 2023, Zenodo 8095035), is carried as its own benchmark: the twin solved at

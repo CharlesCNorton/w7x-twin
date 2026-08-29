@@ -73,12 +73,14 @@ the high-curvature tips near the triangular plane.
 
 ### Geometry version
 
-`hardware/machine.py` hashes the coil set, the field grid, the boundary template, the
-vessel contour and the plasma-facing components, and reports one version over them:
+`hardware/machine.py` hashes the coil set, the constructed trim and control windings,
+the field grid, the boundary template, the vessel contour and the plasma-facing
+components, and reports one version over them:
 
 ```
-geometry e0624a09d0db [epoch=hhf coils=a1810c5f12e7 grid=dbbc11b5c45b
-                       template=38dd0e23ff00 vessel=864272f7575e components=e234e9cda35f]
+geometry c6a51d4a7d32 [epoch=hhf coils=a1810c5f12e7 constructed=77ab55b77de4
+                       grid=dbbc11b5c45b template=38dd0e23ff00
+                       vessel=864272f7575e components=e234e9cda35f]
 ```
 
 W7-X has run three in-vessel configurations, and to a model that traces field lines onto
@@ -88,9 +90,9 @@ divertor from OP2. `machine.EPOCHS` maps campaigns onto them, so a campaign iden
 resolves an epoch and a result names the machine it belongs to:
 
 ```
-limiter  fcedfcd70031    0 components   OP1.1
-tdu      6aa3a39be777    9 components   OP1.2a, OP1.2b
-hhf      e0624a09d0db   10 components   OP2.1 through OP2.5
+limiter  0428b2cee59e    0 components   OP1.1
+tdu      88d7cd87b159    9 components   OP1.2a, OP1.2b
+hhf      c6a51d4a7d32   10 components   OP2.1 through OP2.5
 ```
 
 Each consumer keys on the parts it reads. An equilibrium depends on the coil set and the
@@ -166,11 +168,29 @@ compared check by check against what their publications state in numbers.
 ```bash
 python -m venv venv
 venv/bin/pip install -e .
-python -m w7x_twin fetch data
+./run.sh -m w7x_twin prepare
 ```
 
+`prepare` downloads the machine description, each file verified against a recorded
+digest, and then builds what the package makes for itself: the extended coils file
+carrying the trim and control circuits, which `errorfield`, `symmetrise`, `strikes`
+and `koeberl` read. The finite-build set is tens of megabytes and `winding` writes it
+on demand, so `prepare` makes it only under `--finite-build`. The Koeberl benchmark is
+not fetched: it is a Zenodo download, and `prepare` names it and stops.
+
 VMEC++ links MKL for LAPACK. `run.sh` preloads the dispatch libraries, which some MKL
-packagings do not resolve, and sets `OMP_NUM_THREADS` and the package path.
+packagings do not resolve, and sets `OMP_NUM_THREADS` and the package path. A host
+whose MKL resolves them on its own, or which is not glibc Linux, sets
+`W7X_TWIN_MKL_DIR=none`; `W7X_TWIN_PYTHON` names an interpreter other than `venv/bin/python`.
+
+SPEC, stella and the GPU worker's interpreter are hand-built, so the environment names
+them: `W7X_TWIN_SPEC`, `W7X_TWIN_STELLA` and `W7X_TWIN_GPU_PYTHON`, each defaulting to
+where its own build instructions leave it.
+
+Everything that does not solve an equilibrium runs without VMEC++ or simsopt
+installed: the field-line tracer, the transport closures, the scrape-off layer, the
+records and the whole test suite. Both are reached inside the functions that need
+them.
 
 The twin reaches the solver through `vmecpp.run`, and a build with `-DVMECPP_USE_CUDA=ON`
 executes the same call device-resident: every equilibrium of the beta scans, the
@@ -182,7 +202,16 @@ from its waveform and a twin running in real time solve such sets.
 
 ```bash
 ./run.sh -m w7x_twin validate             # verification record, non-zero if anything disagrees
+./run.sh -m w7x_twin records              # which records stand on the current geometry and inputs
 ```
+
+`validate` checks the computed quantities against their published values. `records`
+checks the records themselves: every one carries the geometry it was produced under
+and, where it read another record, that record's digest, so a component contour recut
+or a grid extended after the fact does not pass silently into the numbers that read
+it. The comparison is part by part: a record built on another coils file differs there
+on purpose, and a difference in any other part means the input moved after the record
+was written. It exits non-zero on any staleness.
 
 Equilibrium and field:
 

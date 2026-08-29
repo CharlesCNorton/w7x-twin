@@ -13,6 +13,12 @@ is rewritten. Open a record itself only for the array elements the digest
 summarises, and for the 1800-run growth-rate grid, whose per-row values the
 digest reduces to a column census.
 
+`python -m w7x_twin prepare` fetches the machine description and builds the coils files
+the package makes for itself, rebuilding a generated file that no longer matches what the
+current code produces. `python -m w7x_twin records` says which records stand on the
+current geometry and the current inputs, and which were produced under inputs that have
+since changed; read it before quoting a number from a record.
+
 Do not read the following wholesale; they are data, not explanation.
 
 - `results/**/*.json`: computed records, digested above. Open a single record
