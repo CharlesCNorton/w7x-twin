@@ -1,0 +1,235 @@
+{
+  "geometry": {
+    "geometry": "c6a51d4a7d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "cases": [
+    {
+      "beta": 0.005000480741582104,
+      "mercier_unstable_fraction": 0.10204081632653061,
+      "resistive_interchange_unstable_fraction": 0.10204081632653061,
+      "resistive_d_r_minimum": -447.7728856302221,
+      "geodesic_h_range": [
+        -0.2827111101720344,
+        10.699331980446164
+      ],
+      "ballooning_unstable_fraction": 0.0,
+      "max_alpha": 0.3269699050773369,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 305.5955781558728,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1222.3819688672106,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2750.3592867194025,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 335.10563464861013,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1282.6923402065818,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    },
+    {
+      "beta": 0.010490193640827844,
+      "mercier_unstable_fraction": 0.061224489795918366,
+      "resistive_interchange_unstable_fraction": 0.061224489795918366,
+      "resistive_d_r_minimum": -433.3623785066629,
+      "geodesic_h_range": [
+        -0.7225312331496461,
+        14.243742178092667
+      ],
+      "ballooning_unstable_fraction": 0.3137254901960784,
+      "max_alpha": 0.6939642168228386,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 304.5910047095351,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1218.362853189508,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2741.3159339890785,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 334.2319090960181,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1278.9385460395645,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    },
+    {
+      "beta": 0.019986262718956697,
+      "mercier_unstable_fraction": 0.061224489795918366,
+      "resistive_interchange_unstable_fraction": 0.061224489795918366,
+      "resistive_d_r_minimum": -409.456384766612,
+      "geodesic_h_range": [
+        -2.762694504372761,
+        32.39504714566457
+      ],
+      "ballooning_unstable_fraction": 0.7058823529411765,
+      "max_alpha": 1.3672302956270377,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 298.98147941292376,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1195.9222347251273,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2690.8234935748733,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 328.6378252133763,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1256.5126384268672,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    },
+    {
+      "beta": 0.02993471916286999,
+      "mercier_unstable_fraction": 0.061224489795918366,
+      "resistive_interchange_unstable_fraction": 0.04081632653061224,
+      "resistive_d_r_minimum": -386.07905723181057,
+      "geodesic_h_range": [
+        -77.54842866526847,
+        -0.11466412676030793
+      ],
+      "ballooning_unstable_fraction": 0.8431372549019608,
+      "max_alpha": 2.162529691602758,
+      "resonances": [],
+      "global_modes": [
+        {
+          "m": 1,
+          "n": 1,
+          "eigenvalue": 287.5250423155062,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 2,
+          "eigenvalue": 1150.0923009173014,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 3,
+          "n": 3,
+          "eigenvalue": 2587.704398567583,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 1,
+          "n": 0,
+          "eigenvalue": 316.7064282906258,
+          "peak_s": 0.02,
+          "unstable": false
+        },
+        {
+          "m": 2,
+          "n": 1,
+          "eigenvalue": 1209.6786812219052,
+          "peak_s": 0.02,
+          "unstable": false
+        }
+      ],
+      "tearing": []
+    }
+  ],
+  "tearing_configuration": {
+    "configuration": "op12a_22ka_mimic",
+    "beta": 0.009308790955036027,
+    "resonances": [
+      {
+        "m": 6,
+        "n": 5,
+        "s_resonant": 0.2582730984006874,
+        "delta_prime_per_m": -50.76944437070693,
+        "unstable": false,
+        "resistivity_ohm_m": 1.8812187042322286e-08,
+        "parallel_wavenumber_gradient_per_m2": 0.15799571346709754,
+        "alfven_speed_m_s": 6001346.245335488,
+        "growth_rate_per_s": 0.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "geometry": {
+    "geometry": "c6a51d4a7d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "reference": "Koeberl et al., MaxEnt 2023, Zenodo 8095035",
+  "extcur_a": [
+    15000.0,
+    15000.0,
+    15000.0,
+    15000.0,
+    15000.0,
+    0.0,
+    0.0
+  ],
+  "rows": [
+    {
+      "quantity": "axis R at phi = 0 [m]",
+      "computed": 5.964515357003816,
+      "reconstructed": 5.963322324978424,
+      "departure_percent": 0.020006163684875275
+    },
+    {
+      "quantity": "iota on axis",
+      "computed": 0.8542310859826212,
+      "reconstructed": 0.8580789506397486,
+      "departure_percent": -0.4484278112472723
+    },
+    {
+      "quantity": "iota at the edge",
+      "computed": 0.9593456630594813,
+      "reconstructed": 0.9567158087453764,
+      "departure_percent": 0.274883543270143
+    },
+    {
+      "quantity": "minor radius [m]",
+      "computed": 0.5013025894600649,
+      "reconstructed": 0.5013050597739835,
+      "departure_percent": -0.0004927765779502108
+    },
+    {
+      "quantity": "plasma volume [m3]",
+      "computed": 27.39763618944553,
+      "reconstructed": 27.394341748394037,
+      "departure_percent": 0.012025990920871383
+    },
+    {
+      "quantity": "beta [%]",
+      "computed": 0.7121828499912848,
+      "reconstructed": 0.7122390087697916,
+      "departure_percent": -0.007884822063290617
+    }
+  ]
+}

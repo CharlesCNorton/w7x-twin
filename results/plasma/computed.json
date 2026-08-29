@@ -1,0 +1,74 @@
+{
+  "geometry": {
+    "geometry": "e0624a09d0db",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "heating_w": 5000000.0,
+  "carbon_edge_fraction": 0.02,
+  "second_ion_fraction": 0.5,
+  "second_ion_mass_amu": 2.0,
+  "deposition_peak_s": 0.02,
+  "deposition_absorbed_fraction": 1.0,
+  "anomalous_channel_available": true,
+  "cases": [
+    {
+      "inputs": "prescribed",
+      "stored_energy_j": 1183930.819806994,
+      "confinement_time_s": 0.2367861639613988,
+      "over_iss04": 1.3999956023787294,
+      "central_electron_temperature_ev": 3566.333689293168,
+      "radiated_fraction": 0.0,
+      "neoclassical_fraction_on_axis": 0.748764886289699
+    },
+    {
+      "inputs": "computed deposition",
+      "stored_energy_j": 1183916.4147394649,
+      "confinement_time_s": 0.23678328294789297,
+      "over_iss04": 1.399978568417914,
+      "central_electron_temperature_ev": 5030.268980265655,
+      "radiated_fraction": 0.0,
+      "neoclassical_fraction_on_axis": 0.833553171476963
+    },
+    {
+      "inputs": "carbon from the target",
+      "stored_energy_j": 1183935.4501048957,
+      "confinement_time_s": 0.23678709002097914,
+      "over_iss04": 1.400001077695861,
+      "central_electron_temperature_ev": 3570.0765854404244,
+      "radiated_fraction": 0.07073365899041703,
+      "neoclassical_fraction_on_axis": 0.7601250002385341
+    },
+    {
+      "inputs": "second ion species",
+      "stored_energy_j": 1183930.819806994,
+      "confinement_time_s": 0.2367861639613988,
+      "over_iss04": 1.3999956023787294,
+      "central_electron_temperature_ev": 3566.333689293168,
+      "radiated_fraction": 0.0,
+      "neoclassical_fraction_on_axis": 0.748764886289699
+    },
+    {
+      "inputs": "computed turbulence",
+      "stored_energy_j": 238020.2622639352,
+      "confinement_time_s": 0.04760405245278704,
+      "over_iss04": 0.28145843901661777,
+      "central_electron_temperature_ev": 614.0874007889684,
+      "radiated_fraction": 0.0,
+      "neoclassical_fraction_on_axis": 0.07478368831288881
+    },
+    {
+      "inputs": "all four",
+      "stored_energy_j": 234812.25631780372,
+      "confinement_time_s": 0.046962451263560745,
+      "over_iss04": 0.27766497900877624,
+      "central_electron_temperature_ev": 615.479619525882,
+      "radiated_fraction": 0.1396960332431802,
+      "neoclassical_fraction_on_axis": 0.006740799907421228
+    }
+  ]
+}

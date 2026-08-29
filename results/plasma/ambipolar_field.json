@@ -1,0 +1,217 @@
+{
+  "geometry": {
+    "geometry": "c6a51d4a7d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "constructed": "77ab55b77de4",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "renormalisation": 1.4,
+  "cases": [
+    {
+      "label": "high performance",
+      "heating_w": 5000000.0,
+      "density_axis_m3": 8e+19,
+      "temperature_scale": 1.0,
+      "surfaces": [
+        {
+          "s": 0.05,
+          "electron_temperature_ev": 4193.906316730652,
+          "ion_temperature_ev": 2306.648474201859,
+          "density_m3": 7.999998828124909e+19,
+          "a_over_ln": 9.837245921421318e-06,
+          "a_over_lte": 1.2377453808422958,
+          "roots_v_m": [
+            -2554.2765851809922
+          ],
+          "field_v_m": -2554.2765851809922,
+          "branch": "ion"
+        },
+        {
+          "s": 0.15,
+          "electron_temperature_ev": 3104.7857487259243,
+          "ion_temperature_ev": 1707.6321617992585,
+          "density_m3": 7.999715228968698e+19,
+          "a_over_ln": 0.0009684203259093681,
+          "a_over_lte": 2.3822177343887145,
+          "roots_v_m": [
+            -6529.466048690913
+          ],
+          "field_v_m": -6371.5853945434055,
+          "branch": "ion"
+        },
+        {
+          "s": 0.25,
+          "electron_temperature_ev": 2287.284943694898,
+          "ion_temperature_ev": 1258.006719032194,
+          "density_m3": 7.996336996118505e+19,
+          "a_over_ln": 0.00934083852160156,
+          "a_over_lte": 3.016457200225545,
+          "roots_v_m": [
+            -7409.830542530648
+          ],
+          "field_v_m": -7409.830542530648,
+          "branch": "ion"
+        },
+        {
+          "s": 0.41,
+          "electron_temperature_ev": 1433.261300241575,
+          "ion_temperature_ev": 788.2937151328664,
+          "density_m3": 7.956427352920097e+19,
+          "a_over_ln": 0.08641625315486112,
+          "a_over_lte": 3.616129981672376,
+          "roots_v_m": [
+            -5667.058675595628
+          ],
+          "field_v_m": -5686.722416575021,
+          "branch": "ion"
+        },
+        {
+          "s": 0.55,
+          "electron_temperature_ev": 972.6136217660381,
+          "ion_temperature_ev": 534.937491971321,
+          "density_m3": 7.808832012751762e+19,
+          "a_over_ln": 0.33601215126609646,
+          "a_over_lte": 4.073313501434175,
+          "roots_v_m": [
+            -4255.544697573744
+          ],
+          "field_v_m": -4255.544697573744,
+          "branch": "ion"
+        },
+        {
+          "s": 0.69,
+          "electron_temperature_ev": 655.806886132686,
+          "ion_temperature_ev": 360.69378737297734,
+          "density_m3": 7.388564702597705e+19,
+          "a_over_ln": 1.045088697861953,
+          "a_over_lte": 4.915194673984832,
+          "roots_v_m": [
+            -3610.7351898978986
+          ],
+          "field_v_m": -3606.706204716186,
+          "branch": "ion"
+        },
+        {
+          "s": 0.85,
+          "electron_temperature_ev": 377.3317861794966,
+          "ion_temperature_ev": 207.53248239872315,
+          "density_m3": 6.093887393564068e+19,
+          "a_over_ln": 4.007439024934363,
+          "a_over_lte": 8.04019526283044,
+          "roots_v_m": [
+            -4132.407878108712
+          ],
+          "field_v_m": -4132.407878108712,
+          "branch": "ion"
+        }
+      ]
+    },
+    {
+      "label": "low density",
+      "heating_w": 5000000.0,
+      "density_axis_m3": 2e+19,
+      "temperature_scale": 1.0,
+      "surfaces": [
+        {
+          "s": 0.05,
+          "electron_temperature_ev": 8361.032334202708,
+          "ion_temperature_ev": 4598.56778381149,
+          "density_m3": 1.999999734374979e+19,
+          "a_over_ln": 8.919102544879078e-06,
+          "a_over_lte": 1.267904656349213,
+          "roots_v_m": [
+            -874.3893929933536,
+            881.55684806844,
+            9011.136122568934
+          ],
+          "field_v_m": 9011.136122568934,
+          "branch": "electron"
+        },
+        {
+          "s": 0.15,
+          "electron_temperature_ev": 6139.012520485047,
+          "ion_temperature_ev": 3376.456886266776,
+          "density_m3": 1.9999354518995714e+19,
+          "a_over_ln": 0.0008780309265996816,
+          "a_over_lte": 2.456071365589077,
+          "roots_v_m": [
+            -1078.4221994361258,
+            1251.8970008235094,
+            12443.480242554793
+          ],
+          "field_v_m": 12158.000450687492,
+          "branch": "electron"
+        },
+        {
+          "s": 0.25,
+          "electron_temperature_ev": 4473.908209747688,
+          "ion_temperature_ev": 2460.649515361228,
+          "density_m3": 1.9991697191201944e+19,
+          "a_over_ln": 0.008468638710419588,
+          "a_over_lte": 3.1384852390569242,
+          "roots_v_m": [
+            -2944.9436803671506
+          ],
+          "field_v_m": -2944.9436803671506,
+          "branch": "ion"
+        },
+        {
+          "s": 0.41,
+          "electron_temperature_ev": 2738.3131882753873,
+          "ion_temperature_ev": 1506.072253551463,
+          "density_m3": 1.9901235333285552e+19,
+          "a_over_ln": 0.07830961306786792,
+          "a_over_lte": 3.8398890290034533,
+          "roots_v_m": [
+            -7576.21099714249
+          ],
+          "field_v_m": -7281.356555747858,
+          "branch": "ion"
+        },
+        {
+          "s": 0.55,
+          "electron_temperature_ev": 1805.400273515948,
+          "ion_temperature_ev": 992.9701504337714,
+          "density_m3": 1.956668589557066e+19,
+          "a_over_ln": 0.3039451100732925,
+          "a_over_lte": 4.434353598826045,
+          "roots_v_m": [
+            -7830.306369196797
+          ],
+          "field_v_m": -7830.306369196797,
+          "branch": "ion"
+        },
+        {
+          "s": 0.69,
+          "electron_temperature_ev": 1167.1638928496375,
+          "ion_temperature_ev": 641.9401410673007,
+          "density_m3": 1.86140799925548e+19,
+          "a_over_ln": 0.9401900390170554,
+          "a_over_lte": 5.541257793852017,
+          "roots_v_m": [
+            -7040.671964119425
+          ],
+          "field_v_m": -7194.651632276139,
+          "branch": "ion"
+        },
+        {
+          "s": 0.85,
+          "electron_temperature_ev": 613.272398063737,
+          "ion_temperature_ev": 337.2998189350554,
+          "density_m3": 1.5679478092078555e+19,
+          "a_over_ln": 3.528456499981064,
+          "a_over_lte": 9.711189454501563,
+          "roots_v_m": [
+            -7976.557190380418
+          ],
+          "field_v_m": -7976.557190380418,
+          "branch": "ion"
+        }
+      ]
+    }
+  ]
+}

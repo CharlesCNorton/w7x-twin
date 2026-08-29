@@ -1,0 +1,418 @@
+{
+  "geometry": {
+    "geometry": "e0624a09d0db",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "e234e9cda35f"
+  },
+  "heating_w": 5000000.0,
+  "power_crossing_separatrix_w": 5000000.0,
+  "connection_length_m": 134.78921775139872,
+  "element_degrees": 0.5,
+  "design_bound_degrees": 3.0,
+  "swept_contour": {
+    "count": 58,
+    "median": 17.03497946065101,
+    "mean": 15.663118045315612,
+    "min": 2.0872400220879386,
+    "max": 24.269736772622103,
+    "p5": 5.644171248560703,
+    "p95": 24.183395329399993
+  },
+  "own_surface": {
+    "count": 58,
+    "median": 2.5957494137728734,
+    "mean": 3.2354331900422806,
+    "min": 0.11509986144754518,
+    "max": 9.846725249688124,
+    "p5": 0.22906518182615543,
+    "p95": 9.270342223437055
+  },
+  "fraction_within_design_bound": 0.6379310344827587,
+  "per_element": [
+    {
+      "target": "divertor horizontal target, upper",
+      "element": 0,
+      "phi_degrees": 1.5000000000000002,
+      "lines": 1,
+      "incidence_degrees": 2.977892320801265,
+      "incidence_spread_degrees": 0.0,
+      "toroidal_position": [
+        0.0
+      ],
+      "poloidal_arc_m": [
+        0.1416053345966592
+      ],
+      "incidence_at_each_strike_degrees": [
+        2.977892320801265
+      ]
+    },
+    {
+      "target": "divertor horizontal target, upper",
+      "element": 2,
+      "phi_degrees": 2.5,
+      "lines": 2,
+      "incidence_degrees": 1.4809795365322387,
+      "incidence_spread_degrees": 0.05744231215030715,
+      "toroidal_position": [
+        0.7999999999999814,
+        0.7999999999999814
+      ],
+      "poloidal_arc_m": [
+        0.2924589535746125,
+        0.2924589535746125
+      ],
+      "incidence_at_each_strike_degrees": [
+        1.5097006926073924,
+        1.4522583804570852
+      ]
+    },
+    {
+      "target": "divertor horizontal target, upper",
+      "element": 31,
+      "phi_degrees": 17.0,
+      "lines": 1,
+      "incidence_degrees": 1.9427639336235532,
+      "incidence_spread_degrees": 0.0,
+      "toroidal_position": [
+        0.5999999999999428
+      ],
+      "poloidal_arc_m": [
+        0.5451802897999118
+      ],
+      "incidence_at_each_strike_degrees": [
+        1.9427639336235532
+      ]
+    },
+    {
+      "target": "divertor horizontal target, upper",
+      "element": 35,
+      "phi_degrees": 19.0,
+      "lines": 8,
+      "incidence_degrees": 8.812701437130572,
+      "incidence_spread_degrees": 4.7921534558592285,
+      "toroidal_position": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "poloidal_arc_m": [
+        0.5944322316388987,
+        0.5944322316388987,
+        0.3993744027480477,
+        0.5944322316388987,
+        0.5944322316388987,
+        0.5944322316388987,
+        0.5944322316388987,
+        0.5944322316388987
+      ],
+      "incidence_at_each_strike_degrees": [
+        9.655036596223797,
+        8.362034974328,
+        5.054571793828895,
+        5.748218211160433,
+        8.257753417358256,
+        9.309863389959213,
+        9.263367899933145,
+        9.846725249688124
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 2,
+      "phi_degrees": 2.5,
+      "lines": 23,
+      "incidence_degrees": 0.6165997658155712,
+      "incidence_spread_degrees": 1.0455826840820632,
+      "toroidal_position": [
+        0.8000000000005157,
+        0.8000000000005157,
+        0.8000000000005157,
+        0.8000000000001086,
+        0.8000000000001086,
+        0.8000000000001086,
+        0.8000000000001086,
+        0.8000000000001086,
+        0.8000000000001086,
+        0.8000000000001086,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905,
+        0.799999999999905
+      ],
+      "poloidal_arc_m": [
+        0.24789740902435936,
+        0.24789740902435936,
+        0.24789740902435936,
+        0.24789740902435947,
+        0.24789740902435947,
+        0.24789740902435947,
+        0.24789740902435947,
+        0.24789740902435947,
+        0.24789740902435947,
+        0.17278401868681728,
+        0.17278401868681809,
+        0.17278401868681809,
+        0.17278401868681809,
+        0.17278401868681809,
+        0.17278401868681809,
+        0.09767695576993927,
+        0.09767695576993927,
+        0.09767695576993927,
+        0.09767695576993927,
+        0.09767695576993927,
+        0.09767695576993927,
+        0.09767695576993927,
+        0.09767695576993927
+      ],
+      "incidence_at_each_strike_degrees": [
+        0.5622071499175076,
+        0.8693036125143784,
+        0.8391710922569041,
+        0.6636896690643105,
+        0.9174386700965453,
+        1.1309430221213053,
+        0.9032526320217342,
+        1.036186126287324,
+        1.1606825455296084,
+        0.6165997658155712,
+        0.5406425978491541,
+        0.6164920788765096,
+        0.6890408918933548,
+        0.7578990421606927,
+        0.8230292097640828,
+        0.11509986144754518,
+        0.1570143323822514,
+        0.1984481272345501,
+        0.23446819145996814,
+        0.27002987827706065,
+        0.30456270821181713,
+        0.3369381546916653,
+        0.3662583838124346
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 19,
+      "phi_degrees": 11.0,
+      "lines": 1,
+      "incidence_degrees": 2.6924862499857483,
+      "incidence_spread_degrees": 0.0,
+      "toroidal_position": [
+        0.5999999999999287
+      ],
+      "poloidal_arc_m": [
+        0.09868498492038523
+      ],
+      "incidence_at_each_strike_degrees": [
+        2.6924862499857483
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 20,
+      "phi_degrees": 11.5,
+      "lines": 4,
+      "incidence_degrees": 2.6208589405647453,
+      "incidence_spread_degrees": 0.07414244616087728,
+      "toroidal_position": [
+        0.7999999999999555,
+        0.7999999999999555,
+        0.7999999999999555,
+        0.7999999999999555
+      ],
+      "poloidal_arc_m": [
+        0.09556400462774238,
+        0.09556400462774238,
+        0.09556400462774238,
+        0.09556400462774238
+      ],
+      "incidence_at_each_strike_degrees": [
+        2.583177487088268,
+        2.6083213404574783,
+        2.633396540672012,
+        2.6573199332491453
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 23,
+      "phi_degrees": 13.0,
+      "lines": 1,
+      "incidence_degrees": 3.818157561223545,
+      "incidence_spread_degrees": 0.0,
+      "toroidal_position": [
+        0.39999999999993446
+      ],
+      "poloidal_arc_m": [
+        0.09795365127873083
+      ],
+      "incidence_at_each_strike_degrees": [
+        3.818157561223545
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 25,
+      "phi_degrees": 14.0,
+      "lines": 4,
+      "incidence_degrees": 2.96349155555082,
+      "incidence_spread_degrees": 0.10866618025032038,
+      "toroidal_position": [
+        0.5999999999999618,
+        0.5999999999999618,
+        0.5999999999999618,
+        0.5999999999999618
+      ],
+      "poloidal_arc_m": [
+        0.098656671955083,
+        0.098656671955083,
+        0.098656671955083,
+        0.098656671955083
+      ],
+      "incidence_at_each_strike_degrees": [
+        2.910051365637117,
+        2.945188795113354,
+        2.981794315988286,
+        3.0187175458874376
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 28,
+      "phi_degrees": 15.5,
+      "lines": 2,
+      "incidence_degrees": 1.622268023163965,
+      "incidence_spread_degrees": 0.03666096914246464,
+      "toroidal_position": [
+        0.19999999999994275,
+        0.19999999999994275
+      ],
+      "poloidal_arc_m": [
+        0.1000078542401192,
+        0.1000078542401192
+      ],
+      "incidence_at_each_strike_degrees": [
+        1.6405985077351974,
+        1.6039375385927328
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 29,
+      "phi_degrees": 16.0,
+      "lines": 3,
+      "incidence_degrees": 3.9766403061609483,
+      "incidence_spread_degrees": 0.06256950435979203,
+      "toroidal_position": [
+        0.3999999999999682,
+        0.3999999999999682,
+        0.3999999999999682
+      ],
+      "poloidal_arc_m": [
+        0.10062427792807717,
+        0.10062427792807717,
+        0.10062427792807717
+      ],
+      "incidence_at_each_strike_degrees": [
+        4.007809879693508,
+        3.9766403061609483,
+        3.945240375333716
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 31,
+      "phi_degrees": 17.0,
+      "lines": 1,
+      "incidence_degrees": 5.1530069485169685,
+      "incidence_spread_degrees": 0.0,
+      "toroidal_position": [
+        0.5999999999999428
+      ],
+      "poloidal_arc_m": [
+        0.10128682600531638
+      ],
+      "incidence_at_each_strike_degrees": [
+        5.1530069485169685
+      ]
+    },
+    {
+      "target": "divertor vertical target, upper",
+      "element": 35,
+      "phi_degrees": 19.0,
+      "lines": 7,
+      "incidence_degrees": 7.121686170613525,
+      "incidence_spread_degrees": 1.9026547272380379,
+      "toroidal_position": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "poloidal_arc_m": [
+        0.24578761443377076,
+        0.24578761443377076,
+        0.24578761443377076,
+        0.24578761443377076,
+        0.24578761443377076,
+        0.24578761443377076,
+        0.24578761443377076
+      ],
+      "incidence_at_each_strike_degrees": [
+        8.370559565154057,
+        7.708600744758139,
+        7.727105032787689,
+        7.10044235017287,
+        7.121686170613525,
+        6.467904837916019,
+        6.493397026059062
+      ]
+    }
+  ],
+  "within_element_spread_degrees": 0.09140431320559883,
+  "between_element_scatter_degrees": 2.2312820602548045,
+  "layer": {
+    "swept contour": {
+      "width_m": 0.0758798846798389,
+      "area_m2": 0.7689293808075622,
+      "target_temperature_ev": 2.536265887162249,
+      "upstream_temperature_ev": 83.12043239368055,
+      "converged": true
+    },
+    "own surface": {
+      "width_m": 0.04036471697372416,
+      "area_m2": 0.8474995976137503,
+      "target_temperature_ev": 31.67339087032058,
+      "upstream_temperature_ev": 138.04317466482763,
+      "converged": true
+    },
+    "design bound": {
+      "width_m": 0.04232694233544465,
+      "area_m2": 0.838430912190342,
+      "target_temperature_ev": 26.19597525750746,
+      "upstream_temperature_ev": 132.77262313589705,
+      "converged": true
+    }
+  }
+}

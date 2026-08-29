@@ -1,0 +1,68 @@
+{
+  "geometry": {
+    "geometry": "381cf00c8d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "accf49ac0e12"
+  },
+  "configuration": "op12a_22ka_mimic",
+  "temperature_scale": 1.0,
+  "beta": 0.009308868176507668,
+  "iota_axis": 0.8213591732197214,
+  "iota_edge": 0.9125018647197923,
+  "resonance": "5/6",
+  "resonant_flux": 0.3068487878077811,
+  "volumes": 4,
+  "interface_transforms": [
+    0.8229445645056026,
+    0.8468392348595812,
+    0.8848057578104089,
+    0.9125018647197923
+  ],
+  "interface_flux": [
+    0.18,
+    0.45,
+    0.8,
+    1.0
+  ],
+  "volume_pressure_pa": [
+    57268.408164930726,
+    33464.84320840541,
+    11747.019790621189,
+    2164.071949658671
+  ],
+  "returncode": 0,
+  "seconds": 0.0,
+  "poincare_shape": [
+    131,
+    400,
+    48
+  ],
+  "axis_r_m": 5.901009686051525,
+  "stepped_widest_plateau": {
+    "width_m": 0.0133246797943006,
+    "trajectories": 5,
+    "winding": 0.2048271582762903,
+    "inner_m": 0.0005297046585989968,
+    "outer_m": 0.013854384452899597
+  },
+  "stepped_at_resonance": {
+    "width_m": 0.00016146817166134975,
+    "trajectories": 2,
+    "winding": 0.16669150333987848,
+    "implied_transform": 0.8333333333333334,
+    "inner_m": 0.38866896007036045,
+    "outer_m": 0.3888304282420218
+  },
+  "traced": {
+    "width_m": 0.017441593926162458,
+    "trajectories": 15,
+    "winding": 0.16649557930648187,
+    "implied_transform": 0.8333333333333334,
+    "inner_m": 0.32924888350001297,
+    "outer_m": 0.3466904774261754
+  }
+}

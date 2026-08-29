@@ -1,0 +1,64 @@
+{
+  "geometry": {
+    "geometry": "381cf00c8d32",
+    "epoch": "hhf",
+    "coils": "a1810c5f12e7",
+    "grid": "dbbc11b5c45b",
+    "template": "38dd0e23ff00",
+    "vessel": "864272f7575e",
+    "components": "accf49ac0e12"
+  },
+  "configuration": "standard",
+  "mode": [
+    1,
+    1
+  ],
+  "measured_current_a": 98.0,
+  "measured_phase_degrees": 162.0,
+  "published_b11": 5e-05,
+  "published_relative_uncertainty": 0.3,
+  "published_source": "Compensation of 1/1 and 2/2 error field in Wendelstein 7-X via divertor heat load symmetrization, Nucl. Fusion, doi:10.1088/1741-4326/ae738e, approximately 0.5e-4 for both b11 and b22",
+  "reconstruction_radius_m": 8.0,
+  "pinned_radius_m": 7.175929409425647,
+  "pinned_radius_band_m": [
+    7.0,
+    7.689654737244903
+  ],
+  "scan": [
+    {
+      "radius_m": 7.0,
+      "b11": 5.588389812661594e-05,
+      "b11_per_ampere": 5.702438584348565e-07,
+      "ratio_to_published": 1.1176779625323188,
+      "current_for_published_a": 87.68178606471025
+    },
+    {
+      "radius_m": 7.5,
+      "b11": 3.916157141096054e-05,
+      "b11_per_ampere": 3.9960787154041366e-07,
+      "ratio_to_published": 0.7832314282192108,
+      "current_for_published_a": 125.12266039019539
+    },
+    {
+      "radius_m": 8.0,
+      "b11": 2.8190130698708105e-05,
+      "b11_per_ampere": 2.876543948847766e-07,
+      "ratio_to_published": 0.5638026139741621,
+      "current_for_published_a": 173.81969783575911
+    },
+    {
+      "radius_m": 8.5,
+      "b11": 2.0938848811422e-05,
+      "b11_per_ampere": 2.1366172256553062e-07,
+      "ratio_to_published": 0.41877697622843996,
+      "current_for_published_a": 234.0147753169259
+    },
+    {
+      "radius_m": 9.0,
+      "b11": 1.5996342708666222e-05,
+      "b11_per_ampere": 1.6322798682312471e-07,
+      "ratio_to_published": 0.31992685417332445,
+      "current_for_published_a": 306.3200188468932
+    }
+  ]
+}
