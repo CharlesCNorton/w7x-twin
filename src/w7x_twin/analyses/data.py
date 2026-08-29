@@ -155,6 +155,113 @@ def run_fetch() -> int:
     return 0
 
 
+# -- prepare -----------------------------------------------------------------------
+
+# Fetch what the package downloads, then build what it makes for itself, so a clean
+# checkout reaches a state the commands can run from in one step.
+#
+#     python -m w7x_twin prepare [--finite-build]
+
+
+def stale_generated(target: Path, path: Path) -> bool:
+    """True where a generated coils file differs from what the code now produces."""
+    import hashlib
+    import tempfile
+
+    from w7x_twin.hardware import coils as coil_geometry
+    from w7x_twin.hardware import walls
+
+    vessel = walls.load_vessel(target / "vessel.part")
+    with tempfile.TemporaryDirectory() as work:
+        probe = Path(work) / path.name
+        coil_geometry.write_extended_coils_file(
+            str(target / "coils.w7x"), str(probe), vessel
+        )
+        return (
+            hashlib.sha256(probe.read_bytes()).digest()
+            != hashlib.sha256(path.read_bytes()).digest()
+        )
+
+
+def build_generated(target: Path, finite_build: bool = False) -> list[str]:
+    """Write the coils files the package generates; returns what it built."""
+    from w7x_twin.hardware import coils as coil_geometry
+    from w7x_twin.hardware import walls
+
+    built: list[str] = []
+    base = target / "coils.w7x"
+
+    extended = target / "coils.w7x_full"
+    # A generated input is checked against what the code generates now, not merely
+    # for being present: the constants and the construction both live in coils.py,
+    # and a file left from an earlier one is consumed without complaint. One built
+    # before the trim mounting radius moved carried a 24 per cent error into the
+    # error-field amplitude, which nothing downstream could see.
+    if extended.exists() and not stale_generated(target, extended):
+        print(f"  {extended.name:22s} already there and current")
+    else:
+        if extended.exists():
+            print(f"  {extended.name:22s} stale against the current code, rebuilding")
+            extended.unlink()
+        vessel = walls.load_vessel(target / "vessel.part")
+        circuits = coil_geometry.write_extended_coils_file(
+            str(base), str(extended), vessel
+        )
+        print(
+            f"  {extended.name:22s} {extended.stat().st_size / 1e6:6.1f} MB, "
+            f"{len(circuits)} circuits"
+        )
+        built.append(extended.name)
+
+    # One filament per conductor turn is 6120 filaments against 70 and tens of
+    # megabytes, and `winding` builds it on demand, so it is made here only when
+    # asked for.
+    pack = target / "coils.w7x_packcad"
+    if not finite_build:
+        print(f"  {pack.name:22s} skipped; `winding` builds it, or pass --finite-build")
+    elif pack.exists():
+        print(f"  {pack.name:22s} already there")
+    else:
+        counts = coil_geometry.write_finite_build_coils_file(base, pack)
+        print(
+            f"  {pack.name:22s} {pack.stat().st_size / 1e6:6.1f} MB, "
+            f"{sum(counts.values())} filaments"
+        )
+        built.append(pack.name)
+    return built
+
+
+def run_prepare() -> int:
+    target = Path("data")
+    finite_build = "--finite-build" in sys.argv
+
+    missing = [name for name in SOURCES if not (target / name).is_file()]
+    if missing or not (target / "pfc").is_dir():
+        print(f"fetching {len(missing)} machine-description files")
+        run_fetch()
+    else:
+        print(f"{len(SOURCES)} machine-description files already in {target}")
+
+    print("\nbuilding what the package makes for itself")
+    build_generated(target, finite_build)
+
+    print()
+    absent = [
+        f"{name}: {why}"
+        for name, why in GENERATED.items()
+        if not (target / name).exists()
+    ]
+    for entry in absent:
+        print(f"still absent, {entry}")
+    if not absent:
+        print("every generated input is present")
+    print(
+        "\nthe geometry these inputs produce:\n  "
+        + str(_common.current_geometry())
+    )
+    return 0
+
+
 # -- cad ---------------------------------------------------------------------------
 
 # The released CAD against the geometry this package reconstructed.
@@ -619,13 +726,17 @@ def run_cad() -> int:
         print("plasma model present; the boundary comparison needs the solver")
 
     # A section whose inputs are absent on this host keeps its stored value, so the
-    # record refreshes from either side of the repo's CAD-and-solver split.
+    # record refreshes from either side of the repo's CAD-and-solver split. The stamp
+    # is not carried over: it belongs to this run, and a stored one taken forward
+    # would outlive the geometry it names.
     for key, value in stored.items():
+        if key == "geometry":
+            continue
         record.setdefault(key, value)
 
-    CAD_RECORD.parent.mkdir(parents=True, exist_ok=True)
-    CAD_RECORD.write_text(json.dumps(record, indent=2))
-    print(f"\nwrote {CAD_RECORD}")
+    # The comparison is of the released CAD against this package's own geometry, so
+    # the record names which version of it was compared.
+    _common.write_record(CAD_RECORD, record, geometry=_common.current_geometry())
     return 0
 
 
@@ -1247,9 +1358,14 @@ class DecimatedField:
         self.dr = stride_r * source.dr
         self.dz = stride_z * source.dz
         self.dphi = self.period / self.num_phi
+        # `digest` memoises into this slot, and anything keyed on the field wants a
+        # decimated grid to hash apart from the full one it came from: the decimated
+        # `b` and the moved-in extents both enter the hash, so they do.
+        self._digest = None
 
     __call__ = field.VacuumField.__call__
     magnitude = field.VacuumField.magnitude
+    digest = field.VacuumField.digest
 
 
 def strike_resolution(twin: Twin, candidates) -> list[dict]:
@@ -1554,6 +1670,192 @@ def run_page_error() -> int:
     )
     print(f"wrote {TRACER_RECORD}")
     return 0
+
+
+# -- records -----------------------------------------------------------------------
+
+# Audit every computed record against the geometry and the inputs it names.
+#
+#     python -m w7x_twin records
+
+#: Export bundles the page and the renderer consume. They carry a geometry stamp of
+#: their own but are megabytes of interpolation table, so the audit names them and
+#: does not open them.
+EXPORT_BUNDLES = (
+    "results/magnetics/w7x_field.json",
+    "results/magnetics/w7x_geometry.json",
+    "results/magnetics/w7x_machine_meshes.json",
+)
+
+#: Records that carry no geometry stamp, and why they carry none.
+UNSTAMPED: dict[str, str] = {
+    "results/hardware/toolchain.json":
+        "a roster of external binaries, which no geometry enters",
+    "results/turbulence/shear_quench.json":
+        "no command in this package writes it, so nothing stamps it",
+}
+
+#: The command that writes each record, so a stale entry names what refreshes it.
+WRITTEN_BY: dict[str, str] = {
+    "results/archive/page_tracer_error.json": "page-error",
+    "results/benchmarks/koeberl.json": "koeberl",
+    "results/discharges/discharge_history.json": "history",
+    "results/discharges/intrinsic_error_field.json": "intrinsic",
+    "results/discharges/profile_residuals.json": "profiles",
+    "results/discharges/reproduce_discharge.json": "discharge",
+    "results/discharges/symmetrise.json": "symmetrise",
+    "results/discharges/trim_radius.json": "trim-radius",
+    "results/equilibrium/beta_scan_standard.json": "beta standard",
+    "results/equilibrium/config_survey.json": "equilibrium",
+    "results/equilibrium/ensemble.json": "ensemble",
+    "results/equilibrium/island_equilibrium.json": "stepped",
+    "results/equilibrium/spec.json": "spec",
+    "results/equilibrium/stability_limits.json": "stability",
+    "results/equilibrium/winding_pack.json": "winding",
+    "results/exhaust/heat_flux.json": "exhaust",
+    "results/exhaust/recycling_pressure.json": "recycling",
+    "results/exhaust/strike_line_migration.json": "migration",
+    "results/exhaust/target_incidence.json": "incidence",
+    "results/hardware/cad_geometry.json": "cad",
+    "results/magnetics/error_field.json": "errorfield",
+    "results/magnetics/plasma_response.json": "response",
+    "results/plasma/ambipolar_field.json": "efield",
+    "results/plasma/bootstrap_routes.json": "bootstrap",
+    "results/plasma/computed.json": "computed",
+    "results/plasma/coupled_solve.json": "coupled",
+    "results/plasma/deposition.json": "deposition",
+    "results/plasma/solved_density.json": "density",
+    "results/plasma/transient_discharge.json": "transient",
+    "results/plasma/turbulent_transport.json": "turbulence",
+    "results/turbulence/growth_rate_grid.json": "growth-rate-grid",
+    "results/turbulence/gyrokinetic.json": "gyrokinetic",
+    "results/turbulence/mixing_length_constant.json": "saturation",
+    "results/validation.json": "validate",
+}
+
+#: Records whose commands stamp the inputs they read. Without this, a record carrying
+#: no ``reads`` block cannot be told from one that reads nothing.
+DECLARES_READS: dict[str, tuple[str, ...]] = {
+    "results/discharges/profile_residuals.json": (
+        "results/turbulence/growth_rate_grid.json",
+        "results/turbulence/mixing_length_constant.json",
+    ),
+    "results/exhaust/recycling_pressure.json": ("results/exhaust/heat_flux.json",),
+    "results/plasma/computed.json": (
+        "results/turbulence/growth_rate_grid.json",
+        "results/turbulence/mixing_length_constant.json",
+    ),
+    "results/plasma/transient_discharge.json": ("results/exhaust/heat_flux.json",),
+    "results/turbulence/mixing_length_constant.json": (
+        "results/turbulence/growth_rate_grid.json",
+    ),
+    "results/plasma/turbulent_transport.json": (
+        "results/turbulence/growth_rate_grid.json",
+        "results/turbulence/mixing_length_constant.json",
+    ),
+}
+
+#: A record names the coils file its analysis chose, so a difference in these parts is
+#: deliberate. A difference in any other part means the input was rewritten after the
+#: record was written.
+CHOSEN_PARTS = ("coils", "constructed")
+
+
+current_geometry = _common.current_geometry
+
+
+def audit_record(path: Path, reference) -> dict:
+    """One record against the current geometry and against the inputs it names."""
+    name = path.as_posix()
+    entry: dict = {"record": name, "stale_parts": [], "stale_reads": [], "notes": []}
+    try:
+        stored = json.loads(path.read_text())
+    except ValueError as error:
+        entry["notes"].append(f"unreadable: {error}")
+        return entry
+
+    geometry = stored.get("geometry") if isinstance(stored, dict) else None
+    if not isinstance(geometry, dict):
+        if name in UNSTAMPED:
+            entry["notes"].append(UNSTAMPED[name])
+        else:
+            entry["stale_parts"].append("no geometry stamp")
+    else:
+        # An epoch is part of the geometry, so a record is compared against the
+        # version of its own epoch.
+        era = geometry.get("epoch", machine.DEFAULT_EPOCH)
+        expected = dict(
+            reference.parts if era == machine.DEFAULT_EPOCH
+            else current_geometry(era).parts
+        )
+        for part, value in expected.items():
+            held = geometry.get(part)
+            if held is None:
+                entry["stale_parts"].append(f"{part} absent")
+            elif held != value and part not in CHOSEN_PARTS:
+                entry["stale_parts"].append(f"{part} {held} against {value}")
+
+    reads = stored.get("reads") if isinstance(stored, dict) else None
+    declared = DECLARES_READS.get(name)
+    if declared and not isinstance(reads, dict):
+        entry["stale_reads"].append(
+            "no input digests, though the command stamps "
+            + ", ".join(Path(source).name for source in declared)
+        )
+    elif isinstance(reads, dict):
+        for source, digest in reads.items():
+            now = _common.file_digest(source)
+            if now != digest:
+                entry["stale_reads"].append(f"{Path(source).name} {digest} against {now}")
+    return entry
+
+
+def run_records() -> int:
+    """Report which records were computed against inputs that have since moved."""
+    if not (Path("data") / "coils.w7x").is_file():
+        raise SystemExit("no data/coils.w7x; run python -m w7x_twin fetch")
+    reference = current_geometry()
+    print(f"current {reference}")
+    print()
+
+    paths = sorted(
+        path for path in Path("results").rglob("*.json")
+        if path.as_posix() not in EXPORT_BUNDLES
+    )
+    rows = [audit_record(path, reference) for path in paths]
+
+    layout = _common.Table(
+        ("record", "48s"), ("geometry", ">10s"), ("inputs", ">8s"), ("refresh with", "s")
+    )
+    layout.begin(extra=20)
+    for row in rows:
+        command = WRITTEN_BY.get(row["record"], "")
+        layout.row(
+            row["record"].removeprefix("results/"),
+            "stale" if row["stale_parts"] else ("-" if row["notes"] else "ok"),
+            "stale" if row["stale_reads"] else (
+                "ok" if row["record"] in DECLARES_READS else "-"
+            ),
+            f"w7x-twin {command}" if command else "",
+        )
+
+    print()
+    stale = [row for row in rows if row["stale_parts"] or row["stale_reads"]]
+    for row in stale:
+        print(f"{row['record']}")
+        for reason in row["stale_parts"] + row["stale_reads"]:
+            print(f"    {reason}")
+    for row in rows:
+        for note in row["notes"]:
+            print(f"{row['record']}\n    {note}")
+
+    print()
+    print(
+        f"{len(rows) - len(stale)} of {len(rows)} records stand on the current geometry "
+        f"and the current inputs"
+    )
+    return 1 if stale else 0
+
 
 # -- validate ----------------------------------------------------------------------
 

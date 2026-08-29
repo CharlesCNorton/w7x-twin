@@ -3,6 +3,7 @@ arguments, fixed-width tables, and geometry-stamped result records."""
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import hashlib
 import json
@@ -39,6 +40,28 @@ def args(cast=str, start: int = 1) -> list:
 def twin(coils_file: str = "coils.w7x") -> Twin:
     """The forward model, built once per process and shared between entry points."""
     return Twin(coils_file=coils_file, verbose=False)
+
+
+@functools.lru_cache(maxsize=None)
+def current_geometry(epoch_key: str = "hhf"):
+    """The geometry version the tracked inputs produce, without solving anything.
+
+    ``twin().geometry`` is the same version, reached through a Twin that builds a
+    response table first; an entry that stamps a record but never solves takes it
+    from here instead.
+    """
+    from w7x_twin.hardware import machine
+
+    coils_path = Path("data") / "coils.w7x"
+    coils = machine.load_coils(coils_path)
+    return machine.geometry_version(
+        coils_path=coils_path,
+        grid_parameters=dataclasses.asdict(coils.grid),
+        template_path=Path("data") / "w7x_free_bdy_vac.json",
+        vessel_path=Path(VESSEL_PART),
+        component_dir=Path(COMPONENT_DIR),
+        epoch_key=epoch_key,
+    )
 
 
 @functools.lru_cache(maxsize=None)

@@ -8,6 +8,7 @@ import sys
 #: Command name to (analysis module, entry point, description, required external code).
 COMMANDS: dict[str, tuple[str, str, str, str]] = {
     "fetch": ("data", "run_fetch", "download the coil, vessel and component data", ""),
+    "prepare": ("data", "run_prepare", "fetch, then build the inputs the package makes for itself", ""),
     "equilibrium": ("equilibrium", "run_equilibrium", "derived quantities of every configuration", ""),
     "beta": ("equilibrium", "run_beta", "the beta scan and the Shafranov shift with it", ""),
     "figure": ("equilibrium", "run_figure", "the overview figure", ""),
@@ -39,6 +40,7 @@ COMMANDS: dict[str, tuple[str, str, str, str]] = {
     "cad": ("data", "run_cad", "the released CAD against the reconstructed geometry", ""),
     "cut-contours": ("data", "run_cut_contours", "recut the component contours onto the released CAD surfaces", ""),
     "page-error": ("data", "run_page_error", "what the page's grid and tracer resolve against the model", ""),
+    "records": ("data", "run_records", "which records stand on the current geometry and inputs", ""),
     "validate": ("data", "run_validate", "the verification record, non-zero if anything disagrees", ""),
     "turbulence": ("turbulence", "run_turbulence", "power balance with both channels computed", "stella"),
     "gyrokinetic": ("turbulence", "run_gyrokinetic", "linear gyrokinetic growth rates", "stella"),
