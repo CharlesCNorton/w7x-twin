@@ -22,8 +22,13 @@
     },
     "vmecpp": {
       "path": "venv/lib/python3.12/site-packages/vmecpp/cpp/_vmecpp.cpython-312-x86_64-linux-gnu.so",
-      "sha256": "794725dab414b3dfce9b1198d373cc2ada248e71d4510e5de5b0dd328f5cb75b",
-      "bytes": 3739560
+      "sha256": "784703e3431340a32400a087bf5da1aa1ec2d72349c736dde2695702f8b9fec0",
+      "bytes": 701176
+    },
+    "vmecpp_core": {
+      "path": "venv/lib/python3.12/site-packages/vmecpp/cpp/glibc-hwcaps/x86-64-v3/libvmecpp_core.so",
+      "sha256": "ff31227b09a4649782b4cb079e8dd9513c2c7e06473b3bd0114c7c9a6a928f59",
+      "bytes": 3324912
     }
   }
 }

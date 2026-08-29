@@ -16,7 +16,7 @@ dependencies = [
     "numpy>=2.0",
     "scipy>=1.13",
     "matplotlib>=3.8",
-    "vmecpp @ git+https://github.com/proximafusion/vmecpp@f5dbf764fb3627cfaea72747a06a77fcc32e7938",
+    "vmecpp @ git+https://github.com/proximafusion/vmecpp@1d7e09941c89210be95b6b20f4d4d555f0a63096",
     "simsopt==1.10.6",
 ]
 
