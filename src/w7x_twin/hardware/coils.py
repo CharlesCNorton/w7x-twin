@@ -233,10 +233,18 @@ def _vessel_saddle(
     if sign < 0:
         centre_index = num_poloidal - centre_index
 
-    def wall_point(phi: float, index: int) -> np.ndarray:
+    def wall_point(phi: float, index: float) -> np.ndarray:
+        # The poloidal position is interpolated between contour vertices rather than
+        # snapped to one: the vertices are some 80 mm apart and the coil spans 350 mm,
+        # so snapping quantises its short sides onto five of them and repeats points,
+        # and a repeated point has a zero tangent and no winding frame.
         r, z = vessel.cut_at(phi)
-        i = int(index) % num_poloidal
-        return np.array([r[i] * np.cos(phi), r[i] * np.sin(phi), z[i]])
+        low = int(np.floor(index)) % num_poloidal
+        high = (low + 1) % num_poloidal
+        weight = float(index) - np.floor(index)
+        radius = (1.0 - weight) * r[low] + weight * r[high]
+        height = (1.0 - weight) * z[low] + weight * z[high]
+        return np.array([radius * np.cos(phi), radius * np.sin(phi), height])
 
     # Poloidal half-width, converted from metres to contour indices.
     r_cut, z_cut = vessel.cut_at(phi_centre)
@@ -251,11 +259,15 @@ def _vessel_saddle(
         centre_index - half_index, centre_index + half_index, per_side
     )
 
-    path = []
-    path += [wall_point(p, centre_index - half_index) for p in phis]
-    path += [wall_point(phis[-1], i) for i in indices]
-    path += [wall_point(p, centre_index + half_index) for p in phis[::-1]]
-    path += [wall_point(phis[0], i) for i in indices[::-1]]
+    # Each side starts where the previous one ended, and the fourth returns to the
+    # first side's start, so every side but the first drops its opening vertex and
+    # the last drops its closing one. Carried whole, the walk repeats all four
+    # corners and closes twice, which leaves the winding one frame short of its own
+    # points when the pack is expanded along it.
+    path = [wall_point(p, centre_index - half_index) for p in phis]
+    path += [wall_point(phis[-1], i) for i in indices[1:]]
+    path += [wall_point(p, centre_index + half_index) for p in phis[::-1][1:]]
+    path += [wall_point(phis[0], i) for i in indices[::-1][1:-1]]
     points = np.array(path)
     return np.vstack([points, points[:1]])
 
@@ -387,8 +399,13 @@ def constructed_digest() -> str:
 
 
 def _frame(points: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """Cross-section frame along a curve, parallel-transported from the best-fit plane normal."""
-    closed = points[:-1] if np.allclose(points[0], points[-1]) else points
+    """Cross-section frame along a curve, parallel-transported from the best-fit plane normal.
+
+    The caller owns the closure and hands over an open path, so stripping one here
+    as well would return one frame fewer than there are points on a winding whose
+    open path happens to end where it began.
+    """
+    closed = points
     tangent = np.gradient(closed, axis=0)
     tangent /= np.linalg.norm(tangent, axis=1)[:, None]
 
